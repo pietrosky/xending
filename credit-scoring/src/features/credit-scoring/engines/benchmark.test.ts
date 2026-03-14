@@ -39,16 +39,18 @@ function makeGoodMetrics(): ApplicantMetric[] {
     { metric_name: 'leverage', value: 0.35 },
     { metric_name: 'margin', value: 0.20 },
     { metric_name: 'dso', value: 30 },
+    { metric_name: 'interest_coverage', value: 4.0 },
   ];
 }
 
 function makePoorMetrics(): ApplicantMetric[] {
   return [
-    { metric_name: 'dscr', value: 0.8 },
-    { metric_name: 'current_ratio', value: 0.7 },
-    { metric_name: 'leverage', value: 0.85 },
-    { metric_name: 'margin', value: 0.03 },
-    { metric_name: 'dso', value: 90 },
+    { metric_name: 'dscr', value: 0.7 },
+    { metric_name: 'current_ratio', value: 0.6 },
+    { metric_name: 'leverage', value: 0.90 },
+    { metric_name: 'margin', value: 0.02 },
+    { metric_name: 'dso', value: 120 },
+    { metric_name: 'interest_coverage', value: 0.8 },
   ];
 }
 
@@ -62,12 +64,12 @@ describe('calcDeviation', () => {
   });
 
   it('should return positive deviation when above benchmark', () => {
-    // (2.0 - 1.5) / 1.5 * 100 = 33.33
-    expect(calcDeviation(2.0, 1.5)).toBeCloseTo(33.33, 1);
+    // (2.0 - 1.3) / 1.3 * 100 = 53.85
+    expect(calcDeviation(2.0, 1.3)).toBeCloseTo(53.85, 1);
   });
 
   it('should return negative deviation when below benchmark', () => {
-    expect(calcDeviation(1.0, 1.5)).toBeCloseTo(-33.33, 1);
+    expect(calcDeviation(1.0, 1.3)).toBeCloseTo(-23.08, 1);
   });
 
   it('should return 0 when both are 0', () => {
@@ -130,12 +132,12 @@ describe('crossValidateRatio', () => {
 describe('compareMetric', () => {
   it('should compare metric against benchmark', () => {
     const metric: ApplicantMetric = { metric_name: 'dscr', value: 2.0 };
-    const bm: IndustryBenchmark = { category: 'financial', metric_name: 'dscr', benchmark_value: 1.5, higher_is_better: true };
+    const bm: IndustryBenchmark = { category: 'financial', metric_name: 'dscr', benchmark_value: 1.3, higher_is_better: true };
     const result = compareMetric(metric, bm);
     expect(result.category).toBe('financial');
     expect(result.metric_name).toBe('dscr');
     expect(result.applicant_value).toBe(2.0);
-    expect(result.benchmark_value).toBe(1.5);
+    expect(result.benchmark_value).toBe(1.3);
     expect(result.percentile).toBeGreaterThan(50);
     expect(result.deviation_pct).toBeGreaterThan(0);
   });
@@ -280,7 +282,7 @@ describe('scoreToStatus', () => {
 describe('generateRiskFlags', () => {
   it('should flag metrics below benchmark', () => {
     const bmResults: BenchmarkMetricResult[] = [
-      { category: 'financial', metric_name: 'dscr', applicant_value: 0.5, benchmark_value: 1.5, percentile: 5, deviation_pct: -66.67 },
+      { category: 'financial', metric_name: 'dscr', applicant_value: 0.5, benchmark_value: 1.3, percentile: 5, deviation_pct: -61.54 },
     ];
     const flags = generateRiskFlags({ benchmarkResults: bmResults, crossValidations: [] });
     expect(flags.some((f) => f.code === 'below_benchmark_dscr')).toBe(true);
@@ -296,9 +298,9 @@ describe('generateRiskFlags', () => {
 
   it('should flag majority below benchmark', () => {
     const bmResults: BenchmarkMetricResult[] = [
-      { category: 'financial', metric_name: 'dscr', applicant_value: 0.8, benchmark_value: 1.5, percentile: 30, deviation_pct: -47 },
-      { category: 'financial', metric_name: 'margin', applicant_value: 0.03, benchmark_value: 0.15, percentile: 25, deviation_pct: -80 },
-      { category: 'operational', metric_name: 'dso', applicant_value: 80, benchmark_value: 45, percentile: 15, deviation_pct: 78 },
+      { category: 'financial', metric_name: 'dscr', applicant_value: 0.7, benchmark_value: 1.3, percentile: 30, deviation_pct: -46 },
+      { category: 'financial', metric_name: 'margin', applicant_value: 0.02, benchmark_value: 0.10, percentile: 25, deviation_pct: -80 },
+      { category: 'operational', metric_name: 'dso', applicant_value: 120, benchmark_value: 60, percentile: 15, deviation_pct: 100 },
     ];
     const flags = generateRiskFlags({ benchmarkResults: bmResults, crossValidations: [] });
     expect(flags.some((f) => f.code === 'majority_below_benchmark')).toBe(true);
@@ -424,5 +426,62 @@ describe('runBenchmarkEngine', () => {
     const result = await runBenchmarkEngine(input);
     const cvFlags = result.risk_flags.filter((f) => f.code.startsWith('cross_validation_mismatch_'));
     expect(cvFlags.length).toBeGreaterThan(0);
+  });
+
+  it('should use portfolio benchmarks when sample size >= 5', async () => {
+    const input: EngineInput = {
+      ...baseInput,
+      syntage_data: {
+        sector: 'manufacturing',
+        company_size: 'medium',
+        region: 'central',
+        applicant_metrics: [{ metric_name: 'dscr', value: 1.5 }],
+        portfolio_benchmarks: {
+          dscr: { category: 'financial', metric_name: 'dscr', benchmark_value: 1.4, higher_is_better: true },
+        },
+        portfolio_sample_size: 8,
+      } as BenchmarkInput,
+    };
+    const result = await runBenchmarkEngine(input);
+    expect(result.key_metrics['benchmark_source']?.interpretation).toContain('portfolio');
+  });
+
+  it('should prefer industry benchmarks over portfolio', async () => {
+    const input: EngineInput = {
+      ...baseInput,
+      syntage_data: {
+        sector: 'manufacturing',
+        company_size: 'medium',
+        region: 'central',
+        applicant_metrics: [{ metric_name: 'dscr', value: 1.5 }],
+        portfolio_benchmarks: {
+          dscr: { category: 'financial', metric_name: 'dscr', benchmark_value: 1.4, higher_is_better: true },
+        },
+        portfolio_sample_size: 10,
+        industry_benchmarks: {
+          dscr: { category: 'financial', metric_name: 'dscr', benchmark_value: 1.6, higher_is_better: true },
+        },
+      } as BenchmarkInput,
+    };
+    const result = await runBenchmarkEngine(input);
+    expect(result.key_metrics['benchmark_source']?.interpretation).toContain('industry');
+  });
+
+  it('should fall back to static when portfolio sample < 5', async () => {
+    const input: EngineInput = {
+      ...baseInput,
+      syntage_data: {
+        sector: 'services',
+        company_size: 'small',
+        region: 'central',
+        applicant_metrics: [{ metric_name: 'dscr', value: 1.5 }],
+        portfolio_benchmarks: {
+          dscr: { category: 'financial', metric_name: 'dscr', benchmark_value: 1.0, higher_is_better: true },
+        },
+        portfolio_sample_size: 3,
+      } as BenchmarkInput,
+    };
+    const result = await runBenchmarkEngine(input);
+    expect(result.key_metrics['benchmark_source']?.interpretation).toContain('static');
   });
 });
