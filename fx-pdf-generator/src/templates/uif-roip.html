@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Operaciones Internas Preocupantes (ROIP)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.4; padding: 20px; }
+    .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #800; padding-bottom: 10px; }
+    .header h1 { font-size: 14pt; margin-bottom: 5px; color: #800; }
+    .header h2 { font-size: 12pt; color: #666; }
+    .confidential-box { background-color: #f8d7da; border: 2px solid #c00; padding: 10px; margin-bottom: 15px; text-align: center; }
+    .confidential-box strong { color: #c00; font-size: 12pt; }
+    .info-section { margin-bottom: 15px; }
+    .info-row { display: flex; margin-bottom: 5px; }
+    .info-label { font-weight: bold; width: 180px; }
+    .info-value { flex: 1; }
+    .report-box { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; background-color: #fafafa; }
+    .report-box h4 { margin-bottom: 10px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+    .report-content { margin-top: 10px; }
+    .status-badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 9pt; }
+    .status-pendiente { background-color: #ffc107; color: #000; }
+    .status-investigando { background-color: #17a2b8; color: #fff; }
+    .status-resuelto { background-color: #28a745; color: #fff; }
+    .footer { margin-top: 30px; text-align: center; font-size: 9pt; color: #666; }
+    .signature-section { margin-top: 50px; display: flex; justify-content: space-between; }
+    .signature-box { width: 200px; text-align: center; }
+    .signature-line { border-top: 1px solid #333; margin-top: 50px; padding-top: 5px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>REPORTE DE OPERACIONES INTERNAS PREOCUPANTES (ROIP)</h1>
+    <h2>Unidad de Inteligencia Financiera - UIF</h2>
+  </div>
+
+  <div class="confidential-box">
+    <strong>🔒 ESTRICTAMENTE CONFIDENCIAL</strong>
+    <p>Este documento contiene información sobre conductas internas que podrían estar relacionadas con actividades ilícitas.</p>
+  </div>
+
+  <div class="info-section">
+    <div class="info-row">
+      <span class="info-label">Número de Reporte:</span>
+      <span class="info-value">{{report_number}}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Sujeto Obligado:</span>
+      <span class="info-value">{{company_name}}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">RFC:</span>
+      <span class="info-value">{{company_rfc}}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Período:</span>
+      <span class="info-value">{{date_from}} al {{date_to}}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Fecha de Generación:</span>
+      <span class="info-value">{{generated_at}}</span>
+    </div>
+  </div>
+
+  <h3>Reportes Internos Incluidos</h3>
+
+  {{#each internal_reports}}
+  <div class="report-box">
+    <h4>Reporte #{{this.index}} - <span class="status-badge status-{{this.status}}">{{this.status_label}}</span></h4>
+    <div class="info-row">
+      <span class="info-label">Fecha de Reporte:</span>
+      <span class="info-value">{{this.created_at}}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Tipo:</span>
+      <span class="info-value">{{this.report_type_label}}</span>
+    </div>
+    {{#if this.related_client}}
+    <div class="info-row">
+      <span class="info-label">Cliente Relacionado:</span>
+      <span class="info-value">{{this.related_client}}</span>
+    </div>
+    {{/if}}
+    <div class="report-content">
+      <strong>Descripción:</strong>
+      <p>{{this.description}}</p>
+    </div>
+    {{#if this.investigation_notes}}
+    <div class="report-content">
+      <strong>Notas de Investigación:</strong>
+      <p>{{this.investigation_notes}}</p>
+    </div>
+    {{/if}}
+    {{#if this.resolution}}
+    <div class="report-content">
+      <strong>Resolución:</strong>
+      <p>{{this.resolution}}</p>
+    </div>
+    {{/if}}
+  </div>
+  {{/each}}
+
+  <div class="info-section" style="margin-top: 20px;">
+    <div class="info-row">
+      <span class="info-label">Total Reportes Internos:</span>
+      <span class="info-value">{{reports_count}}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Reportes Anónimos:</span>
+      <span class="info-value">{{anonymous_count}}</span>
+    </div>
+  </div>
+
+  <div class="signature-section">
+    <div class="signature-box">
+      <div class="signature-line">Oficial de Cumplimiento</div>
+    </div>
+    <div class="signature-box">
+      <div class="signature-line">Representante Legal</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Este documento es confidencial y de uso exclusivo para la UIF</p>
+    <p>La identidad de los reportantes anónimos ha sido protegida</p>
+    <p>Generado por Sistema PLD - Xending Capital</p>
+  </div>
+</body>
+</html>

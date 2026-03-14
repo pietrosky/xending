@@ -1,0 +1,349 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #333333;
+  background: white;
+}
+
+.container {
+  width: 100%;
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 15mm;
+}
+
+/* Header with Xending branding */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #00d4aa;
+}
+
+.logo-section {
+  flex: 1;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.xending-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-svg {
+  width: 50px;
+  height: 50px;
+  filter: drop-shadow(3px 3px 6px rgba(0,0,0,0.15));
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.custom-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-image {
+  max-width: 70px;
+  max-height: 70px;
+  object-fit: contain;
+  filter: drop-shadow(3px 3px 6px rgba(0,0,0,0.15));
+}
+
+.header-text {
+  flex: 1;
+  text-align: center;
+  font-size: 9px;
+  line-height: 1.3;
+  color: #999999;
+  font-style: italic;
+}
+
+.qr-section {
+  flex: 0 0 70px;
+  text-align: right;
+}
+
+.qr-code {
+  width: 70px;
+  height: 70px;
+  border: 2px solid #00d4aa;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: #00d4aa;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+/* Deal header */
+.deal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.deal-number {
+  font-weight: 700;
+  color: #2c3e50;
+  font-size: 12px;
+}
+
+.contact-info {
+  color: #7f8c8d;
+}
+
+.contact-info span {
+  margin-right: 20px;
+  font-weight: 500;
+}
+
+/* Confirmation banner */
+.confirmation-banner {
+  background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%);
+  color: white;
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Info section */
+.info-section {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 20px;
+  background: #f9f9f9;
+  padding: 15px 20px;
+  border-radius: 0;
+  border-left: 5px solid #00d4aa;
+}
+
+.left-column, .right-column {
+  flex: 1;
+}
+
+.field-row {
+  margin-bottom: 10px;
+  display: flex;
+}
+
+.label {
+  font-weight: 600;
+  width: 110px;
+  flex-shrink: 0;
+  color: #34495e;
+}
+
+.value {
+  flex: 1;
+  color: #2c3e50;
+}
+
+.address {
+  margin: 8px 0;
+  margin-left: 110px;
+  font-size: 9px;
+  line-height: 1.3;
+  color: #999999;
+}
+
+/* Transaction section */
+.transaction-banner {
+  background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+  color: white;
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.transaction-table {
+  border: 2px solid #e9ecef;
+  margin-bottom: 25px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.transaction-header {
+  display: flex;
+  background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
+  border-bottom: 2px solid #bdc3c7;
+}
+
+.transaction-row {
+  display: flex;
+  background: white;
+}
+
+.col-left, .col-center, .col-right {
+  padding: 15px;
+  text-align: center;
+  border-right: 1px solid #e9ecef;
+  font-size: 11px;
+}
+
+.col-left {
+  flex: 1;
+  font-weight: 600;
+}
+
+.col-center {
+  flex: 0 0 140px;
+  font-weight: 700;
+  color: #e74c3c;
+  font-size: 12px;
+}
+
+.col-right {
+  flex: 1;
+  border-right: none;
+  font-weight: 600;
+}
+
+.fee-text {
+  font-size: 9px;
+  color: #666666;
+  font-weight: normal;
+}
+
+.total-row {
+  display: flex;
+  justify-content: flex-end;
+  background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%);
+  color: white;
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.total-label {
+  margin-right: 25px;
+}
+
+/* Payment section */
+.payment-banner {
+  background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%);
+  color: white;
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.payment-section {
+  display: flex;
+  gap: 25px;
+  margin-bottom: 30px;
+}
+
+.payment-block {
+  flex: 1;
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 0;
+  border-left: 5px solid #ff6b35;
+}
+
+.payment-header {
+  font-weight: 700;
+  margin-bottom: 15px;
+  font-size: 12px;
+  color: #2c3e50;
+}
+
+.payment-details {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #34495e;
+}
+
+.bank-details {
+  flex: 1;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.bank-info .field-row {
+  margin-bottom: 8px;
+  font-size: 10px;
+}
+
+.bank-info .label {
+  width: 130px;
+  font-weight: 600;
+  color: #34495e;
+}
+
+.bank-info .value {
+  color: #2c3e50;
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  border-top: 3px solid #00d4aa;
+  padding-top: 20px;
+  margin-top: 35px;
+  font-size: 9px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ecf0f1 100%);
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.office {
+  flex: 1;
+  text-align: center;
+  color: #34495e;
+}
+
+.office strong {
+  font-size: 10px;
+  color: #2c3e50;
+  display: block;
+  margin-bottom: 5px;
+}
+
+/* Xending specific styling */
+.xending-accent {
+  color: #00d4aa;
+}
+
+.xending-gradient {
+  background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%);
+}
