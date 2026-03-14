@@ -47,6 +47,7 @@ export function calcCurrencyMismatchRatio(
   return (moneda === 'USD' ? revenue.usd : revenue.mxn) / total;
 }
 
+
 export function calcNaturalHedgeRatio(
   revenue: CurrencyBreakdown,
   costs: CurrencyBreakdown,
@@ -66,6 +67,7 @@ export function calcUncoveredExposure(
   return Math.max(0, totalUsdObligations - hedgeAmount);
 }
 
+/** Stub - full engine not implemented yet. Orchestrator mocks this. */
 export async function runFxRiskEngine(_input: EngineInput): Promise<EngineOutput> {
   void ENGINE_NAME;
   throw new Error('FX Risk engine not fully implemented');

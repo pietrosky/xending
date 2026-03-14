@@ -3,31 +3,22 @@
 CREATE TABLE IF NOT EXISTS cs_cashflow_inputs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   application_id uuid NOT NULL REFERENCES cs_applications(id) ON DELETE CASCADE,
-  ingresos_sat jsonb,
-  gastos_sat jsonb,
-  declaraciones jsonb,
-  estados_financieros jsonb,
-  deuda_buro numeric,
-  monto_solicitado numeric NOT NULL,
-  plazo_meses int NOT NULL,
-  tasa numeric NOT NULL,
-  moneda text NOT NULL CHECK (moneda IN ('MXN', 'USD')),
+  source text NOT NULL CHECK (source IN ('sat', 'financial_statements', 'buro', 'manual', 'combined')),
+  requested_amount numeric,
+  term_months int,
+  interest_rate numeric,
+  currency text CHECK (currency IN ('MXN', 'USD')),
+  raw_data jsonb NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS cs_cashflow_calculations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   application_id uuid NOT NULL REFERENCES cs_applications(id) ON DELETE CASCADE,
-  ebitda numeric,
-  ebitda_margin numeric,
-  flujo_operativo numeric,
-  capex numeric,
-  free_cash_flow numeric,
-  servicio_deuda_actual numeric,
-  servicio_deuda_proyectado numeric,
-  dscr_actual numeric,
-  dscr_proforma numeric,
-  capacidad_maxima_pago numeric,
+  metric_name text NOT NULL,
+  metric_value numeric,
+  formula text,
+  period text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -35,7 +26,8 @@ CREATE TABLE IF NOT EXISTS cs_cashflow_scenarios (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   application_id uuid NOT NULL REFERENCES cs_applications(id) ON DELETE CASCADE,
   scenario_type text NOT NULL CHECK (scenario_type IN ('base', 'stress')),
-  scenario_data jsonb NOT NULL,
+  assumptions jsonb NOT NULL DEFAULT '{}',
+  results jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -54,11 +46,13 @@ CREATE TABLE IF NOT EXISTS cs_cashflow_results (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Indexes
 CREATE INDEX idx_cs_cf_inputs_app ON cs_cashflow_inputs(application_id);
 CREATE INDEX idx_cs_cf_calc_app ON cs_cashflow_calculations(application_id);
 CREATE INDEX idx_cs_cf_scenarios_app ON cs_cashflow_scenarios(application_id);
 CREATE INDEX idx_cs_cf_results_app ON cs_cashflow_results(application_id);
 
+-- RLS
 ALTER TABLE cs_cashflow_inputs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cs_cashflow_calculations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cs_cashflow_scenarios ENABLE ROW LEVEL SECURITY;
