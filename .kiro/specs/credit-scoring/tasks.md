@@ -138,3 +138,87 @@
 - [x] Crear vista de Benchmarks — gestión de benchmarks por industria
 - [x] Dashboard de tendencias interactivo completo con filtros y drill-down
 - [x] Integrar logo Xending y branding completo en todas las vistas
+
+---
+
+## Fase 5: Integración Real Syntage API
+
+### 5.0 Documentación
+- [x] Crear `docs/SYNTAGE_API_INTEGRATION_MAP.md` — mapa completo de 47 endpoints, filtros, engines que consumen cada uno
+
+### 5.1 Core del Cliente API (syntageClient.ts)
+- [x] Reescribir `syntageClient.ts` como módulo core: config, syntageRequest() con retry/backoff, HydraCollection, fetchAllPages(), entityPath()
+- [x] Implementar autenticación X-API-Key + Accept-Version header
+- [x] Implementar rate limit tracking desde response headers
+- [x] Implementar paginación automática Hydra (hydra:next)
+- [x] Mantener tipos legacy (CFDI, Declaracion, ScorePyME, etc.) para compatibilidad con engines existentes
+
+### 5.2 Grupo 1: Datos Crudos SAT (syntageInvoices.ts)
+- [x] Crear `syntageInvoices.ts` — módulo para datos crudos SAT
+- [x] Implementar getInvoices() / getAllInvoices() con filtros completos (type[], isIssuer, dates, currency, paymentMethod, blacklistStatus)
+- [x] Implementar getAllLineItems() / getInvoiceLineItems() — conceptos de factura
+- [x] Implementar getAllPayments() / getInvoicePayments() — pagos PPD
+- [x] Implementar getAllBatchPayments() — pagos agrupados
+- [x] Implementar getAllCreditNotes() / getIssuedCreditNotes() / getAppliedCreditNotes()
+- [x] Implementar getAllTaxRetentions() / getTaxRetentions() — retenciones ISR/IVA
+- [x] Crear transformer toCFDI() — SyntageInvoice → CFDI legacy format
+- [x] Crear fetchCFDIs() — fetch + transform en una llamada
+
+### 5.3 Grupo 2: Datos Fiscales (syntageFiscal.ts) [DONE]
+- [x] Crear `syntageFiscal.ts`
+- [x] Implementar getTaxReturns() / getAllTaxReturns() / getTaxReturn() / getTaxReturnData() — declaraciones anuales/mensuales + datos extraídos
+- [x] Implementar getTaxStatuses() / getTaxStatus() — constancia de situación fiscal
+- [x] Implementar getTaxComplianceChecks() / getTaxComplianceCheck() — opinión de cumplimiento
+- [x] Implementar getElectronicAccountingRecords() / getAllElectronicAccountingRecords() — balanza de comprobación
+- [x] Crear transformer toDeclaracion() + fetchDeclaraciones() — SyntageTaxReturn → Declaracion legacy
+
+### 5.4 Grupo 3: Buró de Crédito (syntageBuro.ts) [DONE]
+- [x] Crear `syntageBuro.ts`
+- [x] Implementar getBuroReports() / getAllBuroReports() / getBuroReport() — reportes Buró completos
+- [x] Implementar getBuroAuthorizations() / createBuroAuthorization() — autorizaciones Buró
+- [x] Crear transformers: toScorePyME(), toCreditosActivos(), toCreditosLiquidados(), toConsultasBuro(), toCalificacionesCartera(), toHawkResults()
+- [x] Crear fetchBuroData() — convenience function que retorna todos los datos transformados para el Buró engine
+
+### 5.5 Grupo 4: Registro Público y Garantías (syntageRegistry.ts) [DONE]
+- [x] Crear `syntageRegistry.ts`
+- [x] Implementar getRpcEntities() / getAllRpcEntities() / getRpcEntity() — Registro Público de Comercio
+- [x] Implementar getRpcShareholders() — accionistas (insight)
+- [x] Implementar getRugGuarantees() / getAllRugGuarantees() / getRugGuarantee() — garantías RUG
+- [x] Implementar getRugOperations() / getAllRugOperations() / getRugOperation() — operaciones RUG
+
+### 5.6 Grupo 5: Insights Pre-procesados (syntageInsights.ts) [DONE]
+- [x] Crear `syntageInsights.ts`
+- [x] Implementar getBalanceSheet() — balance general (con X-Insight-Format header)
+- [x] Implementar getIncomeStatement() — estado de resultados
+- [x] Implementar getFinancialRatios() — razones financieras
+- [x] Implementar calculateSyntageScore() / getScores() — Syntage Score
+- [x] Implementar getCashFlow() — flujo de efectivo (con type: total/payment-method/currency/invoice-type)
+- [x] Implementar getAccountsReceivable() / getAccountsPayable() — CxC/CxP
+- [x] Implementar getCustomerConcentration() / getSupplierConcentration()
+- [x] Implementar getCustomerNetwork() / getVendorNetwork()
+- [x] Implementar getEmployees() — empleados por periodo
+- [x] Implementar getSalesRevenue() / getExpenditures()
+- [x] Implementar getFinancialInstitutions() / getGovernmentCustomers()
+- [x] Implementar getInvoicingBlacklist() — lista negra 69B
+- [x] Implementar getRisks() — riesgos pre-calculados por Syntage
+- [x] Implementar getProductsBought() / getProductsSold()
+- [x] Implementar getInvoicingAnnualComparison()
+- [x] Implementar getTrialBalance() — balanza de comprobación insight
+- [x] Crear transformer toRazonesFinancieras() — SyntageFinancialRatios → RazonesFinancieras legacy
+
+### 5.7 Grupo 6: Background Checks (syntageChecks.ts) [DONE]
+- [x] Crear `syntageChecks.ts`
+- [x] Implementar getBackgroundChecks() / getAllBackgroundChecks() / getBackgroundCheck() — investigaciones legales BIL
+- [x] Implementar getGlobalBackgroundChecks() — lista global
+- [x] Implementar getBackgroundCheckPdf() — descargar PDF
+- [x] Implementar getBackgroundCheckRecords() — registros detallados
+
+### 5.8 Grupo 7: Gestión / Orquestador (syntageManagement.ts) [DONE]
+- [x] Crear `syntageManagement.ts`
+- [x] Implementar getEntities() / getEntity() / createEntity() — gestión de entidades
+- [x] Implementar getCredentials() / getCredential() / createCredential() / revalidateCredential() — credenciales SAT
+- [x] Implementar getExtractions() / getAllExtractions() / getExtraction() / createExtraction() / stopExtraction() — extracciones de datos
+- [x] Implementar getAddresses() — direcciones por código postal
+- [x] Implementar createScheduler() — extracciones programadas
+- [x] Implementar createExport() / getExport() — exportaciones CSV/XLSX
+- [x] Implementar getFile() / downloadFile() — archivos asociados
