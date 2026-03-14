@@ -1,0 +1,28 @@
+# Environment files (all subdirectories)
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Dependencies
+**/node_modules/
+
+# Build outputs
+**/dist/
+**/build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
