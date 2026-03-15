@@ -2,14 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NewApplicationForm } from '../components/NewApplicationForm';
-import type { NewApplicationData } from '../types/application.types';
+import type { PreFilterInput } from '../types/expediente.types';
 
 export function NewApplicationPage() {
   const navigate = useNavigate();
 
-  function handleSubmit(data: NewApplicationData) {
-    // Placeholder — will be replaced with Supabase integration
-    console.log('Nueva solicitud:', data);
+  function handleSubmit(data: PreFilterInput) {
+    // TODO: Crear expediente en Supabase + ejecutar pre-filtro
+    console.log('Nueva solicitud (expediente):', data);
     navigate('/applications');
   }
 

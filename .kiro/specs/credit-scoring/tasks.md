@@ -222,3 +222,67 @@
 - [x] Implementar createScheduler() — extracciones programadas
 - [x] Implementar createExport() / getExport() — exportaciones CSV/XLSX
 - [x] Implementar getFile() / downloadFile() — archivos asociados
+
+---
+
+## Fase 6: Flujo de Otorgamiento de Crédito
+
+### 6A: Expedientes + State Machine + Pre-filtro
+
+#### 6A.1 Tipos TypeScript
+- [x] Crear `expediente.types.ts` — Expediente, ExpedienteToken, ExpedienteEvent, PreFilterInput/Result, BusinessRules, DEFAULT_BUSINESS_RULES
+- [x] Definir ExpedienteStage (10 estados), CreditPurpose (4 propósitos), TokenPurpose (4 tipos), ExpedienteEventType (26 eventos)
+
+#### 6A.2 Base de Datos
+- [x] Migration `030_cs_expedientes.sql` — cs_expedientes, cs_expediente_tokens, cs_expediente_events, cs_business_rules
+- [x] Secuencia + trigger para folio automático XND-YYYY-NNNNN
+- [x] Trigger updated_at automático
+- [x] Vista cs_expedientes_dashboard (último evento + tokens activos)
+- [x] Reglas de negocio por defecto insertadas
+
+#### 6A.3 Engine Pre-filtro
+- [x] Crear `preFilter.ts` — 7 reglas de negocio: RFC, monto ($100K-$1M USD), propósito, ventas (10x), antigüedad (2 años), plazo (2-90 días), email
+- [x] Conversión MXN→USD automática
+- [x] validatePreFilterInput() para validación de formulario
+- [x] CREDIT_PURPOSE_OPTIONS para UI
+
+#### 6A.4 State Machine
+- [x] Crear `expedienteStateMachine.ts` — transiciones válidas, eventos por transición, labels, descripciones, progreso
+- [x] isValidTransition(), getNextStages(), isFinalStage(), canAdvance()
+- [x] STAGE_TOKEN_REQUIRED — qué etapas requieren enviar link al solicitante
+- [x] getProgress() — porcentaje de avance del expediente
+
+#### 6A.5 Formulario actualizado
+- [x] Reescribir `NewApplicationForm.tsx` con campos: propósito, ventas declaradas, antigüedad, plazo días, email, teléfono, representante legal
+- [x] Integrar pre-filtro en tiempo real (panel visual GO/NO-GO con detalle por regla)
+- [x] Actualizar `NewApplicationPage.tsx` para usar PreFilterInput
+
+#### 6A.6 RLS Policies
+- [x] Migration `030b_cs_rls_policies_fase6.sql` — RLS para cs_expedientes, cs_expediente_tokens, cs_expediente_events, cs_business_rules
+- [x] Acceso anónimo para tokens públicos (solicitantes sin login)
+
+### 6B: Integración Syntage Live (Buró + SAT)
+- [ ] Flujo de autorización Buró (firma digital → consulta vía Syntage)
+- [ ] Orquestador Syntage (createEntity → createCredential → createExtraction → polling)
+- [ ] Generación de tokens/links únicos por expediente
+- [ ] Sistema de emails (templates Xending, envío, reminders)
+- [ ] Webhook/polling para estado de extracciones
+
+### 6C: Scoring Interno + Pérdida Esperada
+- [ ] Scoring 2 capas del Excel (solvencia 1300pts + financiero 100pts)
+- [ ] Motor PE = PD × EAD × LGD por cliente
+- [ ] Integración scoring interno con scoring existente de engines
+- [ ] Dashboard de PE por portafolio
+
+### 6D: PLD Completo CNBV
+- [ ] Listas internacionales (OFAC/ONU/UE/FinCEN/Interpol)
+- [ ] Monitoreo operaciones ≥ $10K USD equivalente
+- [ ] Bitácora inalterable (10 años retención)
+- [ ] Reportes CNBV/UIF (XML compatible SITI)
+- [ ] Control de acceso por roles PLD
+
+### 6E: Documentación + Decisión Final
+- [ ] Upload de documentos con Supabase Storage
+- [ ] Validación documental automática (completitud, vigencia)
+- [ ] Flujo de decisión (automática < umbral, comité > umbral)
+- [ ] Generación de expediente PDF completo
