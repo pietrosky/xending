@@ -284,10 +284,13 @@
 - [x] Polling con timeout configurable y estados terminales
 - [x] Extracciones en paralelo por tipo
 
-#### 6B.4 Sistema de Emails (pendiente)
-- [ ] Templates Xending (bienvenida, link Buró, link CIEC, link documentos, reminder)
-- [ ] Servicio de envío (placeholder, integración SMTP/SES posterior)
-- [ ] Lógica de reminders automáticos (48h antes de expiración)
+#### 6B.4 Sistema de Emails
+- [x] Crear `emailService.ts` — templates HTML con branding Xending
+- [x] 7 templates: welcome, buro_link, ciec_link, document_link, reminder, rejection, approval
+- [x] Layout HTML responsive con logo, colores brand, CTA buttons
+- [x] generateEmail() + sendEmail() (placeholder SMTP/SES) + sendTemplateEmail()
+- [x] TOKEN_PURPOSE_TO_TEMPLATE mapping para auto-selección de template
+- [x] getTokensNearExpiry() en tokenService para detectar reminders pendientes
 
 #### 6B.5 Webhook/Polling Extracciones (pendiente)
 - [ ] Edge function para recibir webhooks de Syntage
