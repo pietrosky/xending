@@ -262,11 +262,36 @@
 - [x] Acceso anónimo para tokens públicos (solicitantes sin login)
 
 ### 6B: Integración Syntage Live (Buró + SAT)
-- [ ] Flujo de autorización Buró (firma digital → consulta vía Syntage)
-- [ ] Orquestador Syntage (createEntity → createCredential → createExtraction → polling)
-- [ ] Generación de tokens/links únicos por expediente
-- [ ] Sistema de emails (templates Xending, envío, reminders)
-- [ ] Webhook/polling para estado de extracciones
+
+#### 6B.1 Servicio de Expedientes
+- [x] Crear `expedienteService.ts` — CRUD expedientes, transiciones con state machine, eventos audit log
+- [x] createExpediente() con pre-filtro automático y auto-avance a pld_check
+- [x] advanceExpediente() con validación de transiciones
+- [x] rejectExpediente(), updatePldScore(), updateBuroScore(), linkSyntageEntity()
+- [x] Consultas: getExpediente, getByFolio, listExpedientes, countByStage, getEvents
+
+#### 6B.2 Servicio de Tokens
+- [x] Crear `tokenService.ts` — generación/validación de tokens UUID con URLs
+- [x] createToken(), createTokenForStage() (auto-detecta propósito por etapa)
+- [x] validateToken() con verificación de expiración y uso
+- [x] getTokenUrl(), getTokenUrlWithContext() para emails
+- [x] getActiveTokens(), getTokensNearExpiry(), invalidateAllTokens()
+
+#### 6B.3 Orquestador Syntage
+- [x] Crear `syntageOrchestrator.ts` — flujo completo createEntity→credential→extraction→polling
+- [x] orchestrateSyntage() — flujo SAT completo (5 pasos con tracking)
+- [x] orchestrateBuroFlow() — flujo Buró independiente (autorización→extracción→polling)
+- [x] Polling con timeout configurable y estados terminales
+- [x] Extracciones en paralelo por tipo
+
+#### 6B.4 Sistema de Emails (pendiente)
+- [ ] Templates Xending (bienvenida, link Buró, link CIEC, link documentos, reminder)
+- [ ] Servicio de envío (placeholder, integración SMTP/SES posterior)
+- [ ] Lógica de reminders automáticos (48h antes de expiración)
+
+#### 6B.5 Webhook/Polling Extracciones (pendiente)
+- [ ] Edge function para recibir webhooks de Syntage
+- [ ] Fallback polling para extracciones sin webhook
 
 ### 6C: Scoring Interno + Pérdida Esperada
 - [ ] Scoring 2 capas del Excel (solvencia 1300pts + financiero 100pts)
