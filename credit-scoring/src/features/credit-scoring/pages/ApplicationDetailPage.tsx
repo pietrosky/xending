@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   BarChart3,
   Brain,
+  ClipboardList,
   DollarSign,
   FilePlus,
   FileText,
@@ -25,8 +26,16 @@ import { CrossAnalysisView } from '../components/CrossAnalysisView';
 import { DecisionWorkflow } from '../components/DecisionWorkflow';
 import { TrendDashboard } from '../components/TrendDashboard';
 import { ScoringReport } from '../components/ScoringReport';
+import { FinancialAnalysisView } from '../components/FinancialAnalysisView';
 import { useScoringOrchestrator } from '../hooks/useScoringOrchestrator';
-import { DEMO_APPLICATION } from '../lib/demoData';
+import {
+  DEMO_APPLICATION,
+  getDemoFinancialData,
+  getDemoInternalScoringInput,
+  getDemoExpectedLossInputs,
+} from '../lib/demoData';
+import { runInternalScoring } from '../engines/internalScoring';
+import { calculatePortfolioExpectedLoss } from '../engines/expectedLoss';
 import type { CreditApplication, ScoringResult } from '../types/application.types';
 import type { RiskFlag } from '../types/engine.types';
 import type { TrendResult } from '../types/trend.types';
@@ -40,6 +49,7 @@ import type { AIAnalysisPanelProps } from '../components/AIAnalysisPanel';
 type SubTab =
   | 'overview'
   | 'engines'
+  | 'financiero'
   | 'trends'
   | 'crosses'
   | 'ai'
@@ -56,6 +66,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { key: 'overview', label: 'Resumen', icon: Gauge },
   { key: 'engines', label: 'Motores', icon: Zap },
+  { key: 'financiero', label: 'Financiero', icon: ClipboardList },
   { key: 'trends', label: 'Tendencias', icon: TrendingUp },
   { key: 'crosses', label: 'Cruces', icon: GitCompare },
   { key: 'ai', label: 'AI', icon: Brain },
@@ -213,6 +224,20 @@ export function ApplicationDetailPage() {
   const engineResultsArray = Object.values(orch.engineResults);
   const allTrends = collectAllTrends(orch);
 
+  // Financial analysis data (computed once)
+  const financialData = useMemo(() => {
+    const demoFinancial = getDemoFinancialData();
+    const internalScoringResult = runInternalScoring(getDemoInternalScoringInput());
+    const expectedLossResult = calculatePortfolioExpectedLoss(getDemoExpectedLossInputs());
+    return {
+      balances: demoFinancial.balance_data,
+      incomes: demoFinancial.income_data,
+      razones: demoFinancial.razones_financieras,
+      internalScoring: internalScoringResult,
+      expectedLoss: expectedLossResult,
+    };
+  }, []);
+
   // If no :id param, this is the main dashboard page
   const isDashboard = !id;
 
@@ -357,6 +382,17 @@ export function ApplicationDetailPage() {
                 </button>
                 <EngineDetailView result={orch.engineResults[selectedEngine]!} />
               </div>
+            )}
+
+            {/* Financiero */}
+            {activeTab === 'financiero' && (
+              <FinancialAnalysisView
+                balances={financialData.balances}
+                incomes={financialData.incomes}
+                razones={financialData.razones}
+                internalScoring={financialData.internalScoring}
+                expectedLoss={financialData.expectedLoss}
+              />
             )}
 
             {/* Trends */}

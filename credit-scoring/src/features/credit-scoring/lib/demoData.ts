@@ -145,6 +145,7 @@ export function getDemoSatData(): SatFacturacionInput {
 export function getDemoBuroData(): BuroInput {
   const score_pyme: ScorePyME = {
     score: 710,
+    calificacion: 'A-',
     califica_rating: 'A-',
     causas: ['Buen historial de pago', 'Bajo nivel de endeudamiento'],
     fecha_consulta: new Date().toISOString(),
@@ -152,9 +153,9 @@ export function getDemoBuroData(): BuroInput {
   };
 
   const creditos_activos: CreditoActivo[] = [
-    { institucion: 'BBVA', tipo_credito: 'Revolvente', moneda: 'MXN', monto_original: 1_000_000, monto_vigente: 450_000, plazo_meses: 12, atraso_dias: 0, historico_pagos: 'VVVVVVVVVVVV', raw: {} },
-    { institucion: 'Banorte', tipo_credito: 'Simple', moneda: 'MXN', monto_original: 2_000_000, monto_vigente: 1_200_000, plazo_meses: 36, atraso_dias: 0, historico_pagos: 'VVVVVVVVVVVV', raw: {} },
-    { institucion: 'Santander', tipo_credito: 'Arrendamiento', moneda: 'MXN', monto_original: 800_000, monto_vigente: 350_000, plazo_meses: 24, atraso_dias: 0, historico_pagos: 'VVVVVVVVVVVV', raw: {} },
+    { institucion: 'BBVA', tipo_credito: 'Revolvente', moneda: 'MXN', monto_original: 1_000_000, monto_vigente: 450_000, plazo_meses: 12, atraso_dias: 0, historico_pagos: 'VVVVVVVVVVVV', fecha_apertura: '2024-01-15', fecha_ultimo_pago: '2025-12-01', raw: {} },
+    { institucion: 'Banorte', tipo_credito: 'Simple', moneda: 'MXN', monto_original: 2_000_000, monto_vigente: 1_200_000, plazo_meses: 36, atraso_dias: 0, historico_pagos: 'VVVVVVVVVVVV', fecha_apertura: '2023-06-01', fecha_ultimo_pago: '2025-12-01', raw: {} },
+    { institucion: 'Santander', tipo_credito: 'Arrendamiento', moneda: 'MXN', monto_original: 800_000, monto_vigente: 350_000, plazo_meses: 24, atraso_dias: 0, historico_pagos: 'VVVVVVVVVVVV', fecha_apertura: '2024-03-01', fecha_ultimo_pago: '2025-12-01', raw: {} },
   ];
 
   const creditos_liquidados: CreditoLiquidado[] = [
@@ -165,11 +166,9 @@ export function getDemoBuroData(): BuroInput {
   const consultas_buro: ConsultasBuro = {
     ultimos_3_meses: 2,
     ultimos_12_meses: 4,
-    ultimos_24_meses: 7,
-    mas_24_meses: 3,
     detalle: [
-      { fecha: '2025-12-01', institucion: 'Xending', tipo: 'financiera' },
-      { fecha: '2025-11-15', institucion: 'BBVA', tipo: 'financiera' },
+      { fecha: '2025-12-01', institucion: 'Xending', tipo_consulta: 'financiera' },
+      { fecha: '2025-11-15', institucion: 'BBVA', tipo_consulta: 'financiera' },
     ],
     raw: {},
   };
@@ -664,4 +663,60 @@ export function getDemoReviewFrequencyData(): ReviewFrequencyInput {
     has_usd_exposure_uncovered: false,
     has_high_concentration: false,
   };
+}
+
+// ============================================================
+// Internal Scoring Demo Data
+// ============================================================
+
+import type { InternalScoringInput, ExpectedLossInput } from '../types/scoring.types';
+
+export function getDemoInternalScoringInput(): InternalScoringInput {
+  return {
+    companyName: 'Distribuidora Industrial del Norte SA de CV',
+    rfc: 'DIN100101XX0',
+    legalRepresentative: 'Carlos Martinez Lopez',
+    contactInfo: '+52 81 1234 5678',
+    businessType: 'comercial',
+    businessAgeYears: 12,
+    zone: 'comercial',
+    identificationDocs: { curp: true, ine: true, addressProofCompany: true, addressProofPerson: true },
+    corporateDocStatus: 'inscripcion_rpc',
+    taxStatusCompany: true,
+    taxStatusShareholder: true,
+    addressProofRecent: true,
+    financialAnalysis: { verticalAnalysis: 18, horizontalAnalysis: 16, leverageAnalysis: 15, liquidityAnalysis: 17, profitabilityAnalysis: 16 },
+    taxReturnsPresented: true,
+    liabilitiesTablePresented: true,
+    shareholderEquityPresented: true,
+    marriageCertificatePresented: false,
+    creditFocus: 'capital_trabajo',
+    hasOfficialId: true,
+    hasAddressProof: true,
+    hasActaConstitutiva: true,
+    hasBuroReport: true,
+    hasBankStatements: true,
+    hasTaxCertificate: true,
+    financialIndicators: {
+      grossProfitMargin: 0.35,
+      operatingProfitMargin: 0.15,
+      currentRatio: 1.61,
+      operatingMargin: 0.15,
+      buroScore: 710,
+    },
+  };
+}
+
+// ============================================================
+// Expected Loss Demo Data
+// ============================================================
+
+export function getDemoExpectedLossInputs(): ExpectedLossInput[] {
+  return [
+    { clientId: 'C001', clientName: 'Distribuidora Industrial del Norte', ead: 3_000_000, daysPastDue: 0 },
+    { clientId: 'C002', clientName: 'Grupo Comercial Monterrey', ead: 1_500_000, daysPastDue: 15 },
+    { clientId: 'C003', clientName: 'Transportes del Pacifico', ead: 800_000, daysPastDue: 45 },
+    { clientId: 'C004', clientName: 'Alimentos del Bajio', ead: 2_200_000, daysPastDue: 0 },
+    { clientId: 'C005', clientName: 'Construcciones Reforma', ead: 500_000, daysPastDue: 95 },
+  ];
 }
