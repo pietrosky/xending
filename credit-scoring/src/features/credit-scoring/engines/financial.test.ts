@@ -84,10 +84,10 @@ function makeRelatedParties(overrides: Partial<RelatedPartiesData> = {}): Relate
 function makeRazones(overrides: Partial<RazonesFinancieras> = {}): RazonesFinancieras {
   return {
     liquidez: { coeficiente_solvencia: 2.5, prueba_acida: 2.0 },
-    actividad: { rotacion_activos: 2.0 },
+    actividad: { rotacion_cxc: 8.0, rotacion_cxp: 6.0 },
     rentabilidad: { margen_bruto: 0.40 },
     apalancamiento: { coeficiente_endeudamiento: 0.67 },
-    cobertura: { intensidad_capital: 0.5 },
+    cobertura: { cobertura_intereses: 3.0, dscr: 1.5 },
     raw: {},
     ...overrides,
   };

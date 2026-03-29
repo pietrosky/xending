@@ -52,7 +52,7 @@ describe('runEngine', () => {
     expect(result.module_grade).toBe('F');
     expect(result.engine_name).toBe('failing');
     expect(result.explanation).toContain('API timeout');
-    expect(result.risk_flags[0].code).toBe('engine_execution_error');
+    expect(result.risk_flags[0]?.code).toBe('engine_execution_error');
   });
 
   it('handles non-Error throws gracefully', async () => {
@@ -85,8 +85,8 @@ describe('runEnginesParallel', () => {
     const results = await runEnginesParallel(engines, baseInput);
 
     expect(Object.keys(results)).toEqual(['alpha', 'beta']);
-    expect(results.alpha.module_score).toBe(70);
-    expect(results.beta.module_score).toBe(85);
+    expect(results.alpha?.module_score).toBe(70);
+    expect(results.beta?.module_score).toBe(85);
   });
 
   it('returns empty object for empty registry', async () => {
@@ -101,9 +101,9 @@ describe('runEnginesParallel', () => {
     };
     const results = await runEnginesParallel(engines, baseInput);
 
-    expect(results.good.module_status).toBe('pass');
-    expect(results.good.module_score).toBe(90);
-    expect(results.bad.module_status).toBe('blocked');
-    expect(results.bad.module_score).toBe(0);
+    expect(results.good?.module_status).toBe('pass');
+    expect(results.good?.module_score).toBe(90);
+    expect(results.bad?.module_status).toBe('blocked');
+    expect(results.bad?.module_score).toBe(0);
   });
 });

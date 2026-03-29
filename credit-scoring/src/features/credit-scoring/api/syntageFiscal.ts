@@ -245,8 +245,8 @@ export interface ElectronicAccountingFilters {
  */
 function buildTaxReturnParams(
   filters: TaxReturnFilters,
-): Record<string, string | number | boolean | string[]> {
-  const params: Record<string, string | number | boolean | string[]> = {};
+): Record<string, string | number | boolean | undefined> {
+  const params: Record<string, string | number | boolean | undefined> = {};
 
   if (filters.type) params['type'] = filters.type;
   if (filters.filedAfter) params['filedAt[after]'] = filters.filedAfter;
@@ -264,8 +264,8 @@ function buildTaxReturnParams(
  */
 function buildElectronicAccountingParams(
   filters: ElectronicAccountingFilters,
-): Record<string, string | number | boolean | string[]> {
-  const params: Record<string, string | number | boolean | string[]> = {};
+): Record<string, string | number | boolean | undefined> {
+  const params: Record<string, string | number | boolean | undefined> = {};
 
   if (filters.type) params['type'] = filters.type;
   if (filters.fiscalYear) params['fiscalYear'] = filters.fiscalYear;
@@ -535,7 +535,7 @@ export function toDeclaracion(
   const income = data.incomeStatement;
   return {
     ejercicio: taxReturn.fiscalYear,
-    tipo: taxReturn.type,
+    tipo: taxReturn.type === 'annual' ? 'anual' : 'mensual',
     fecha_presentacion: taxReturn.filedAt,
     ingresos_totales: income?.revenue ?? 0,
     deducciones: income

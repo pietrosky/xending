@@ -36,6 +36,7 @@ const POLICY_CONFIG: PolicyConfig = {
 function makeScorePyME(overrides: Partial<ScorePyME> = {}): ScorePyME {
   return {
     score: 700,
+    calificacion: 'A',
     califica_rating: 'A',
     causas: [],
     fecha_consulta: '2025-01-15',
@@ -54,6 +55,8 @@ function makeCredito(overrides: Partial<CreditoActivo> = {}): CreditoActivo {
     plazo_meses: 12,
     atraso_dias: 0,
     historico_pagos: 'VVVVVVVVVVVV',
+    fecha_apertura: '2024-01-15',
+    fecha_ultimo_pago: '2025-01-01',
     raw: {},
     ...overrides,
   };
@@ -75,8 +78,6 @@ function makeConsultas(overrides: Partial<ConsultasBuro> = {}): ConsultasBuro {
   return {
     ultimos_3_meses: 1,
     ultimos_12_meses: 3,
-    ultimos_24_meses: 5,
-    mas_24_meses: 2,
     detalle: [],
     raw: {},
     ...overrides,

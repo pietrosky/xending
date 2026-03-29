@@ -107,7 +107,7 @@ describe('scoryClient - validateCompliance', () => {
 
     expect(result.status).toBe('fail');
     expect(result.manual_override).toBe(true);
-    expect(result.risk_flags[0].code).toBe('scory_api_unavailable');
+    expect(result.risk_flags[0]?.code).toBe('scory_api_unavailable');
     vi.useRealTimers();
   });
 

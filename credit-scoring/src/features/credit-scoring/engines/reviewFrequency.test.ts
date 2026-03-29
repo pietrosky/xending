@@ -7,7 +7,6 @@ import {
   applyFrequencyOverrides,
   calcEngineScore,
   generateRiskFlags,
-  buildKeyMetrics,
   runReviewFrequencyEngine,
 } from './reviewFrequency';
 import type {

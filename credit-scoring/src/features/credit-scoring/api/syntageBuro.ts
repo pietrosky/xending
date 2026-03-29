@@ -283,6 +283,7 @@ export async function createBuroAuthorization(
 export function toScorePyME(report: SyntageBuroReport): ScorePyME {
   return {
     score: report.score,
+    calificacion: report.scoreRating,
     califica_rating: report.scoreRating,
     causas: report.scoreCauses,
     fecha_consulta: report.consultedAt,
@@ -311,6 +312,8 @@ export function toCreditosActivos(
     plazo_meses: c.termMonths,
     atraso_dias: c.delayDays,
     historico_pagos: c.paymentHistory,
+    fecha_apertura: c.openedAt,
+    fecha_ultimo_pago: c.lastPaymentAt,
     raw: {
       opened_at: c.openedAt,
       last_payment_at: c.lastPaymentAt,
@@ -332,7 +335,7 @@ export function toCreditosLiquidados(
     tipo_credito: c.creditType,
     monto_original: c.originalAmount,
     fecha_liquidacion: c.closedAt,
-    tipo_liquidacion: c.liquidationType,
+    tipo_liquidacion: c.liquidationType as 'normal' | 'quita' | 'dacion' | 'quebranto',
     raw: {},
   }));
 }
@@ -373,12 +376,10 @@ export function toConsultasBuro(
   return {
     ultimos_3_meses: last3,
     ultimos_12_meses: last12,
-    ultimos_24_meses: last24,
-    mas_24_meses: older,
     detalle: consultations.map((c) => ({
       fecha: c.date,
       institucion: c.institution,
-      tipo: c.consultationType,
+      tipo_consulta: c.consultationType,
     })),
     raw: {},
   };
