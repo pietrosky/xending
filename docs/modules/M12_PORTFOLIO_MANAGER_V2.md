@@ -506,14 +506,16 @@ El sistema determina automáticamente la ruta según el tipo de línea y el sett
    (solo service, dispara autorización socios)
 
 RUTA A — Client-funded (default para todos los clientes nuevos):
+  → Se pacta la operación primero: monto, TC, plazo — todo queda fijado
   → Se crea operación: status = 'pending_client_funding'
   → settlement_type = 'client_funded'
   → NO requiere autorización de socios
   → NO consume disponible de la línea
-  → Se notifica al cliente monto a depositar + cuenta destino
+  → Se notifica al cliente: monto a depositar, cuenta destino, TC pactado
   → Cliente deposita fondos
   → Admin confirma recepción → status = 'client_funded'
-  → Ir al paso 7
+  → Xending ejecuta (libera USD o transfiere) → status = 'executed'
+  → Operación completada → status = 'completed'
 
 RUTA B — Crédito con liberación automática (authorized + credit):
   → Solo disponible si line_category = 'authorized' Y default_settlement = 'credit'
@@ -708,34 +710,39 @@ Ejemplo cliente sin estudio:
 ### 4.7 Flujo: Operación client-funded (cliente fondea primero)
 
 ```
-1. Analista selecciona línea de servicio del cliente (marcado como client_funded)
-2. Ingresa datos de la operación:
-   - Monto, moneda de pago, TC si FX
-3. Sistema determina producto y tasa (igual que siempre)
-4. Se crea operación:
+1. Analista selecciona línea del cliente (marcado como client_funded)
+2. Se pacta la operación PRIMERO:
+   - Monto, moneda de pago, plazo, TC pactado (si FX)
+   - Sistema determina producto, tasa, costo de fondeo, total
+   - Todo queda fijado en este momento (el TC ya no cambia)
+3. Se crea operación:
    - settlement_type = 'client_funded'
    - status = 'pending_client_funding'
-5. Se notifica al cliente el monto a depositar y la cuenta destino
-6. Cliente deposita fondos
-7. Admin confirma recepción de fondos:
+   - fx_rate_agreed, fx_daily_funding_cost, fx_payment_amount ya calculados
+4. Se notifica al cliente:
+   - Monto a depositar (en moneda de pago)
+   - Cuenta destino
+   - TC pactado y plazo
+5. Cliente deposita fondos
+6. Admin confirma recepción de fondos:
    - client_funded_at = ahora
    - client_funded_amount = monto recibido
    - client_funded_reference = referencia del depósito
    - status = 'client_funded'
-8. Xending ejecuta la operación (conversión FX o transferencia)
+7. Xending ejecuta la operación (libera USD o transfiere)
    - status = 'executed'
-9. Se registra como completada:
+8. Se registra como completada:
    - status = 'completed'
    - NO consume disponible de la línea
    - NO requiere autorización de socios
    - Se calcula fx_spread_gain si es FX
-10. Si el cliente NO fondea en tiempo razonable (configurable):
-    - status = 'expired_unfunded'
-    - Se cancela la operación
+9. Si el cliente NO fondea en tiempo razonable (configurable):
+   - status = 'expired_unfunded'
+   - Se cancela la operación
 
 Nota: La línea existe como respaldo. Si en algún momento se necesita
-operar a crédito (contingencia), se cambia settlement_type a 'credit'
-y se aplican las reglas normales de autorización.
+operar a crédito (contingencia), se usa el botón "Solicitar crédito
+anticipado" y se aplican las reglas de autorización.
 ```
 
 ---
