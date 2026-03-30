@@ -151,14 +151,14 @@ cs_credit_lines                       -- Líneas de crédito aprobadas
   approved_amount, currency, available_amount
   start_date, expiry_date, annual_renewal_date
   interest_rate_override, status, suspension_reason
-  default_settlement_type (client_funded, auto_release, credit)
+  default_settlement_type (client_funded, credit)
   conditions jsonb, line_contract_id
   approved_by, approved_at
 
 cs_credit_operations                  -- Disposiciones individuales
   id, credit_line_id, product_id, operation_number
   operation_type (standard, intraday)
-  settlement_type (credit, client_funded, auto_release)
+  settlement_type (credit, client_funded)
   amount, disbursement_currency, payment_currency
   -- FX fields
   is_fx_operation, fx_rate_agreed, fx_rate_market, fx_payment_amount, fx_spread_gain
