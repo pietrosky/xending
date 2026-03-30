@@ -618,16 +618,19 @@ Ejemplo cliente sin estudio:
      fx_payment_amount_final = amount × fx_rate_settlement
      fx_spread_gain = amount × (fx_rate_settlement - fx_rate_market)
 
-   Ejemplo:
-     TC mercado: $20.00, costo fondeo: $0.02/día, plazo: 30 días
-     TC pactado: $20.00 + ($0.02 × 30) = $20.60
-     Monto: $100,000 USD → cliente debe: $2,060,000 MXN
+   Ejemplo (default $0.01/día, configurable por promotor):
+     TC mercado: $20.00, costo fondeo: $0.01/día, plazo: 30 días
+     TC pactado: $20.00 + ($0.01 × 30) = $20.30
+     Monto: $100,000 USD → cliente debe: $2,030,000 MXN
 
      Pago 10 días antes:
-       Descuento: $0.02 × 10 = $0.20
-       TC cierre: $20.60 - $0.20 = $20.40
-       Cliente paga: $2,040,000 MXN (ahorra $20,000 MXN)
-       Ganancia Xending: $100K × ($20.40 - $20.00) = $40,000 MXN
+       Descuento: $0.01 × 10 = $0.10
+       TC cierre: $20.30 - $0.10 = $20.20
+       Cliente paga: $2,020,000 MXN (ahorra $10,000 MXN)
+       Ganancia Xending: $100K × ($20.20 - $20.00) = $20,000 MXN
+
+     Nota: el costo de fondeo default es $0.01/día pero el promotor
+     puede cambiarlo por operación (ej: $0.02, $0.03, etc.)
 
 4. SI es operación Direct Lending (misma moneda):
    - Si pago anticipado: recalcular intereses al día real
