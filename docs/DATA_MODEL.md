@@ -36,17 +36,31 @@ cs_company_contacts
   contact_name text
   is_primary boolean
 
-cs_provider_data
+cs_data_extractions
   id uuid pk
   company_id uuid fk → cs_companies
-  provider text (syntage, scory, manual)
-  data_type text
-  data_payload jsonb
-  extraction_id text
-  fetched_at timestamptz
-  expires_at timestamptz
-  status text (fresh, stale, refreshing, error)
+  provider text (syntage, scory, manual, erp, banking)
+  extraction_type text (full, incremental, point_in_time)
   triggered_by text
+  syntage_extraction_id text
+  status text (running, completed, failed, partial)
+  started_at, completed_at timestamptz
+  data_types_extracted text[]
+  period_from date, period_to date
+
+cs_provider_data (datos granulares por empresa + tipo + periodo)
+  id uuid pk
+  company_id uuid fk → cs_companies
+  extraction_id uuid fk → cs_data_extractions
+  provider text
+  data_type text (invoices_issued, tax_return_annual, buro_report, etc.)
+  period_key text ('2024-01' mensual, '2024' anual, '2026-03-15' puntual)
+  period_type text (monthly, quarterly, annual, point_in_time)
+  data_payload jsonb
+  record_count int
+  extracted_at timestamptz
+  superseded_by uuid (si se re-extrajo, apunta al nuevo)
+  is_current boolean (true = versión vigente de este periodo)
 ```
 
 ## I02-I05: Infraestructura
