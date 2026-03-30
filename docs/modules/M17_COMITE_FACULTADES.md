@@ -1,7 +1,7 @@
 # M17 — Comité y Facultades
 
 ## Resumen
-Sistema de autorización por firmas de socios. Gestiona dos flujos: comité formal para aprobación de líneas de crédito, y autorización rápida por facultades para operaciones intradía. Reglas deterministas de quórum según monto.
+Sistema de autorización por firmas de socios. Gestiona dos flujos: comité formal para aprobación de líneas de crédito, y autorización rápida por facultades para operaciones bajo Líneas de Servicio (sin estudio de crédito). Las Líneas Autorizadas (con estudio) no requieren autorización adicional. Reglas deterministas de quórum según monto.
 
 ## Estado: POR CONSTRUIR
 
@@ -19,9 +19,10 @@ Sistema de autorización por firmas de socios. Gestiona dos flujos: comité form
 - Voto: aprobar / condicionar / rechazar (con comentario)
 - Cuando se alcanza quórum → resultado
 
-### 2. Facultades rápidas (operaciones intradía)
-- Para operaciones de crédito intradía o máximo 1 día
-- Clientes conocidos con línea ya aprobada
+### 2. Facultades rápidas (operaciones — solo Líneas de Servicio)
+- Para operaciones bajo Líneas de Servicio (sin estudio de crédito)
+- Aplica tanto a intradía como estándar en líneas de servicio
+- Líneas Autorizadas (con estudio de crédito) NO requieren esta autorización
 - Se envía email a socios requeridos con resumen de la operación
 - Cada socio autoriza vía link/token
 - Cuando se alcanza quórum → se libera operación
@@ -31,10 +32,13 @@ Sistema de autorización por firmas de socios. Gestiona dos flujos: comité form
 ## Reglas de quórum (función determinista)
 
 ```
-Operaciones intradía:
+Operaciones bajo Líneas de Servicio (sin estudio de crédito):
   Hasta $100,000 USD       → 3 de 5 socios
   $100,001 - $350,000 USD  → 4 de 5 socios
   Más de $350,000 USD      → 5 de 5 socios (unanimidad)
+
+Operaciones bajo Líneas Autorizadas (con estudio de crédito):
+  NO requieren autorización adicional de socios
 
 Líneas de crédito (comité):
   Al inicio: 5 de 5 socios para todas
@@ -47,10 +51,12 @@ Líneas de crédito (comité):
 
 ```
 1. Se crea solicitud de autorización
-   - tipo: 'credit_line' o 'intraday'
+   - tipo: 'credit_line' o 'service_operation' o 'renewal'
    - monto, moneda
    - quórum requerido (calculado por getRequiredApprovals)
    - resumen del caso (expediente o operación)
+   - Nota: solo se crea para líneas de servicio o aprobación de líneas nuevas
+   - Líneas autorizadas (con estudio) NO generan solicitud de autorización por operación
 
 2. Se envía email a los socios requeridos
    - Cada email tiene link único con token
@@ -82,7 +88,7 @@ cs_authorization_requests
   tenant_id text
   entity_type text          -- 'expediente' o 'operation'
   entity_id uuid
-  authorization_type text   -- 'credit_line', 'intraday', 'renewal'
+  authorization_type text   -- 'credit_line', 'service_operation', 'renewal'
   amount numeric
   currency text
   required_approvals int    -- 3, 4, o 5

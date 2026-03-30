@@ -85,10 +85,12 @@ Paso 8 → M12 Gestor de Cartera
 
   INTRADÍA (mismo día):
     Pactar → generar contrato (sin firma) → email confirmación
-    Requiere autorización por facultades (M17):
-      Hasta $100K USD → 3 de 5 socios autorizan
-      $100K-$350K USD → 4 de 5 socios
-      Más de $350K USD → 5 de 5 socios
+    Autorización depende del tipo de línea:
+      Línea Autorizada (con estudio): NO requiere autorización de socios
+      Línea de Servicio (sin estudio): SÍ requiere facultades (M17):
+        Hasta $100K USD → 3 de 5 socios autorizan
+        $100K-$350K USD → 4 de 5 socios
+        Más de $350K USD → 5 de 5 socios
     Se concilia pago el mismo día
     No hay alertas de vencimiento
 
@@ -130,12 +132,16 @@ Plazo 15-45 días:           5 días antes + 3 días antes + 1 día antes
 
 ---
 
-## Reglas de facultades para intradía (función determinista)
+## Reglas de facultades para operaciones (función determinista)
 
 ```
-Hasta $100,000 USD:         3 de 5 socios deben autorizar
-$100,001 - $350,000 USD:    4 de 5 socios deben autorizar
-Más de $350,000 USD:        5 de 5 socios (unanimidad)
+SOLO APLICA A LÍNEAS DE SERVICIO (sin estudio de crédito).
+Líneas Autorizadas (con estudio) NO requieren autorización adicional.
+
+Línea de Servicio — autorización por monto:
+  Hasta $100,000 USD:         3 de 5 socios deben autorizar
+  $100,001 - $350,000 USD:    4 de 5 socios deben autorizar
+  Más de $350,000 USD:        5 de 5 socios (unanimidad)
 ```
 
 ---
@@ -178,7 +184,7 @@ Más de $350,000 USD:        5 de 5 socios (unanimidad)
 
 | ID | Módulo | Estado | Descripción |
 |----|--------|--------|-------------|
-| M12 | Gestor de Cartera | POR CONSTRUIR | Líneas revolventes, operaciones, vencimientos, renovación anual |
+| M12 | Gestor de Cartera | DISEÑO COMPLETO | FX Financing + Direct Lending, líneas revolventes, operaciones bullet 2-45d, moratorios, clasificación cartera, dashboard. Ver M12_PORTFOLIO_MANAGER_V2.md |
 | M13 | Covenant Tracking | ENGINE CONSTRUIDO | Seguimiento condiciones, revisión trimestral/semestral |
 
 ### Grupo E: Inteligencia y AI
@@ -301,25 +307,77 @@ Combinan métricas de 2+ engines para detectar patrones: rotación de deuda, emp
 
 ---
 
+## Productos de crédito Xending (Fase 1)
+
+### Producto 1: FX Financing (Financiamiento con conversión cambiaria)
+```
+Tasa: 0% (ganancia vía spread cambiario)
+Moneda desembolso: USD → Moneda pago: MXN (a TC pactado)
+Plazo: 2-45 días, bullet (pago total al vencimiento)
+Moratorios: 5% mensual + IVA sobre intereses
+Sin pagos parciales, sin comisiones (estructura lista)
+
+Ejemplo:
+  Desembolso: $100,000 USD
+  TC pactado: $20.50
+  Plazo: 30 días
+  Cliente paga: $2,050,000 MXN
+  Ganancia: spread entre TC pactado y TC mercado
+```
+
+### Producto 2: Direct Lending (Financiamiento directo)
+```
+Tasa: 40% anual (misma moneda: USD→USD o MXN→MXN)
+Plazo: 2-45 días, bullet
+Moratorios: 5% mensual + IVA sobre intereses
+Sin pagos parciales, sin comisiones (estructura lista)
+
+Ejemplo:
+  Desembolso: $100,000 USD
+  Tasa: 40%/365 × 30 = 3.2877%
+  Interés: $3,287.67 + IVA $526.03
+  Cliente paga: $103,813.70 USD
+```
+
+### Regla automática de tasa
+```
+SI moneda_desembolso ≠ moneda_pago → Tasa 0% (FX Financing)
+SI moneda_desembolso = moneda_pago → Tasa 40% anual (Direct Lending)
+```
+
+### Productos futuros (Fase 2+): Factoraje, Crédito Simple Empresarial
+### Ver diseño completo: docs/modules/M12_PORTFOLIO_MANAGER_V2.md
+
+---
+
 ## Tipos de operación de crédito
 
 ### Estándar (2-45 días)
 ```
-Pactar → Contrato → DocuSign → Firma → Liberar pago → Alertas → Vencimiento → Pago
+Pactar (monto, moneda pago, plazo, TC si FX)
+  → Sistema determina producto y tasa automáticamente
+  → Contrato → DocuSign → Firma → Liberar pago
+  → Alertas según plazo → Vencimiento → Pago total
+  → Liberar disponible en línea
 ```
 
 ### Intradía (mismo día)
 ```
-Pactar → Autorización por facultades (3-5 socios) → Contrato (sin firma) → Email → Conciliar pago
+Pactar (monto, moneda pago, TC si FX)
+  → SI Línea de Servicio: Autorización por facultades (3-5 socios según monto)
+  → SI Línea Autorizada: Sin autorización adicional
+  → Contrato (sin firma) → Email confirmación
+  → Liberar pago → Conciliar pago mismo día
+  → Liberar disponible en línea
 ```
 
-### Línea revolvente
+### Línea revolvente (ejemplo con ambos productos)
 ```
 Línea aprobada: $500K USD
-  Operación 1: $100K (disponible: $400K)
-  Operación 2: $150K (disponible: $250K)
-  Pago operación 1: (disponible: $350K)
-  Operación 3: $200K (disponible: $150K)
+  Op 1: $100K USD→MXN (FX, tasa 0%, TC 20.50)  → disponible: $400K
+  Op 2: $150K USD→USD (Direct, tasa 40%)         → disponible: $250K
+  Pago Op 1: $2,050,000 MXN recibidos             → disponible: $350K
+  Op 3: $200K USD→MXN (FX, tasa 0%, TC 20.80)   → disponible: $150K
 ```
 
 ---

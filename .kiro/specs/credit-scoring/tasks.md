@@ -297,10 +297,34 @@
 - [ ] Fallback polling para extracciones sin webhook
 
 ### 6C: Scoring Interno + Pérdida Esperada
-- [ ] Scoring 2 capas del Excel (solvencia 1300pts + financiero 100pts)
-- [ ] Motor PE = PD × EAD × LGD por cliente
-- [ ] Integración scoring interno con scoring existente de engines
-- [ ] Dashboard de PE por portafolio
+
+#### 6C.1 Documentación de Referencia
+- [x] Crear `docs/SCORING_METHODOLOGY_EXCEL_REFERENCE.md` — Documentación completa de ambos Excels
+- [x] Scoring de solvencia (1300 pts), scoring combinado (1800 pts), sub-variables, rangos, matriz de riesgo, PE, PLD
+
+#### 6C.2 Tipos TypeScript
+- [x] Crear `scoring.types.ts` — SolvenciaVariable, SolvenciaResult, CombinedScoringResult, RiskClassification, ExpectedLossInput/Result, PortfolioExpectedLossResult
+- [x] Constantes: MAX_SOLVENCIA_SCORE (1300), MAX_COMBINED_SCORE (1800), APPROVAL_THRESHOLD_PCT (60%)
+- [x] Tipos de input: BusinessType, BusinessZone, CreditFocus, CorporateDocStatus, IdentificationDocs, FinancialAnalysisSubVars, FinancialIndicatorsInput
+
+#### 6C.3 Engine Scoring Interno
+- [x] Crear `internalScoring.ts` — Motor de scoring 2 capas
+- [x] Capa 1: runSolvenciaScoring() — 13 variables (antigüedad, giro, zona, enfoque, docs ID, acta, constancia fiscal, domicilio, EEFF, declaraciones, pasivos, patrimonio, matrimonio)
+- [x] Capa 2: runInternalScoring() — 5 categorías (solicitud 700 + fuentes 600 + P&L 200 + indicadores 200 + buró 100)
+- [x] Indicadores financieros con rangos del Excel: utilidad bruta, utilidad operación, razón liquidez, margen operativo, score buró
+- [x] classifyRisk() — Clasificación de riesgo: Alto(<652), Medio Alto(652-680), Medio Bajo(681-700), Bajo(701+)
+- [x] Matriz de garantías: Aval+Garantía, Solo Garantía, No Aplica según nivel de riesgo
+
+#### 6C.4 Engine Pérdida Esperada
+- [x] Crear `expectedLoss.ts` — PE = PD × EAD × LGD
+- [x] Tabla PD por días de atraso: 0d=2%, 1-30d=5%, 31-60d=10%, 61-90d=25%, 91-120d=50%, 121-180d=75%, >180d=100%
+- [x] LGD estándar CNBV: 40%
+- [x] calculateExpectedLoss() — Cálculo individual por cliente
+- [x] calculatePortfolioExpectedLoss() — Agregación de portafolio con distribución por categoría de atraso
+
+#### 6C.5 Pendientes (para integración posterior)
+- [ ] Integración scoring interno con scoring existente de engines (orquestador)
+- [ ] Dashboard de PE por portafolio (componente UI)
 
 ### 6D: PLD Completo CNBV
 - [ ] Listas internacionales (OFAC/ONU/UE/FinCEN/Interpol)

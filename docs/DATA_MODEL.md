@@ -127,26 +127,82 @@ cs_document_templates         -- Templates por tipo y tenant
 cs_generated_documents        -- Documentos generados (PDF, DocuSign)
 ```
 
-## M12: Gestor de Cartera (POR CONSTRUIR)
+## M12: Gestor de Cartera (DISEÑO COMPLETO — POR CONSTRUIR)
+
+Diseño detallado en: docs/modules/M12_PORTFOLIO_MANAGER_V2.md
 
 ```
-cs_credit_lines
-  id, tenant_id, company_id, expediente_id
-  approved_amount, currency, available_amount
-  line_type (revolving, single)
-  start_date, expiry_date, annual_renewal_date
-  interest_rate, status, conditions jsonb
+cs_credit_products                    -- Catálogo de productos por tenant
+  id, tenant_id, product_code, product_name, product_type
+  disbursement_currencies, payment_currencies, allows_cross_currency
+  default_annual_rate, rate_type, rate_determination_rule
+  min_term_days, max_term_days, amortization_type, allows_partial_payments
+  moratory_rate_monthly, moratory_has_iva
+  opening_commission_pct, annual_commission_pct, disbursement_commission_pct
+  requires_signature, contract_template_code
+  max_line_amount, max_line_currency, line_type
+  is_active, phase
+  UNIQUE(tenant_id, product_code)
 
-cs_credit_operations
-  id, credit_line_id
+cs_credit_lines                       -- Líneas de crédito aprobadas
+  id, tenant_id, company_id, product_id
+  line_category (authorized, service)  -- con o sin estudio de crédito
+  expediente_id (null si service)      -- solo para líneas autorizadas
+  approved_amount, currency, available_amount
+  start_date, expiry_date, annual_renewal_date
+  interest_rate_override, status, suspension_reason
+  conditions jsonb, line_contract_id
+  approved_by, approved_at
+
+cs_credit_operations                  -- Disposiciones individuales
+  id, credit_line_id, product_id, operation_number
   operation_type (standard, intraday)
-  amount, currency, disbursement_date, maturity_date, term_days
-  interest_rate, status
-  contract_id fk → cs_generated_documents
-  authorization_id fk → cs_authorization_requests
-  requires_signature boolean
-  docusign_envelope_id
-  paid_at, paid_amount
+  settlement_type (credit, client_funded)
+  amount, disbursement_currency, payment_currency
+  -- FX fields
+  is_fx_operation, fx_rate_agreed, fx_rate_market, fx_payment_amount, fx_spread_gain
+  -- Tasa e intereses
+  annual_rate, rate_determination, interest_amount, iva_on_interest
+  moratory_rate_monthly, moratory_amount, iva_on_moratory, moratory_days
+  commission_amount, commission_type
+  -- Plazos
+  disbursement_date, maturity_date, term_days
+  -- Estado
+  status (pending_authorization, pending_signature, pending_disbursement,
+          pending_client_funding, client_funded, executed,
+          active, paid, paid_early, overdue, defaulted, cancelled, expired_unfunded)
+  -- Contrato y firma
+  contract_id, authorization_id, requires_signature, docusign_envelope_id
+  -- Pago
+  paid_at, paid_amount, paid_currency, payment_reference
+  client_funded_at, client_funded_amount, client_funded_reference
+  total_payable
+
+cs_operation_alerts                   -- Alertas de vencimiento programadas
+  id, operation_id, alert_type, alert_date, days_before_maturity
+  status, sent_at, sent_to, channel, message_template
+
+cs_collection_contacts                -- Registro de gestiones de cobranza
+  id, operation_id, contact_date, contact_type, contact_by
+  contact_result, promise_date, promise_amount, notes
+  next_action, next_action_date
+
+cs_portfolio_classification           -- Calificación de cartera (snapshot mensual)
+  id, tenant_id, snapshot_date
+  total_portfolio, performing_portfolio, non_performing_portfolio
+  imor, icor
+  grade_a1 through grade_e amounts
+  total_reserves
+  concentration_by_client/sector/currency/product jsonb
+  avg_term_days, avg_rate, total_fx_gain, total_interest_earned
+
+cs_portfolio_daily_position           -- Posición diaria para dashboard
+  id, tenant_id, position_date
+  active_lines, active_operations
+  total_approved, total_utilized, total_available, utilization_pct
+  performing, non_performing, imor
+  maturing_today, maturing_7_days, maturing_30_days
+  total_usd, total_mxn
 ```
 
 ## M17: Comité y Facultades (POR CONSTRUIR)
@@ -154,7 +210,7 @@ cs_credit_operations
 ```
 cs_authorization_requests
   id, tenant_id, entity_type, entity_id
-  authorization_type (credit_line, intraday, renewal)
+  authorization_type (credit_line, service_operation, renewal)
   amount, currency
   required_approvals, current_approvals, current_rejections
   status (pending, approved, rejected, expired)
