@@ -227,10 +227,12 @@ cs_credit_lines
   -- Tasa (heredada del producto, override posible)
   interest_rate_override numeric       -- null = usa la del producto
   -- Settlement default del cliente
-  default_settlement_type text not null default 'credit'
-    -- 'credit'         → Xending desembolsa primero (Ruta A o B según line_category)
-    -- 'client_funded'  → Cliente fondea primero (Ruta C, sin riesgo)
-    -- El analista puede hacer override por operación individual
+  default_settlement_type text not null default 'client_funded'
+    -- 'client_funded'  → Cliente fondea primero, Xending libera después (Ruta C, sin riesgo)
+    -- 'auto_release'   → Xending libera automáticamente al operar (clientes de confianza, pagan rápido)
+    -- 'credit'         → Xending desembolsa primero, requiere autorización socios (Ruta B, contingencia)
+    -- Configurable en cualquier momento por admin. Se puede mover entre modos libremente.
+    -- El analista puede hacer override por operación individual si cliente y Xending acuerdan.
   -- Estado
   status text not null default 'active'
     -- 'pending_contract', 'active', 'suspended', 'expired',
@@ -260,6 +262,7 @@ cs_credit_operations
   settlement_type text not null default 'credit'
     -- 'credit'         → Xending desembolsa primero, cliente paga después (usa línea)
     -- 'client_funded'  → Cliente fondea primero, Xending libera después (no usa línea)
+    -- 'auto_release'   → Xending libera automáticamente (usa línea, cliente de confianza)
   -- Montos
   amount numeric not null              -- monto desembolsado
   disbursement_currency text not null  -- 'USD'
@@ -493,13 +496,13 @@ El sistema determina automáticamente la ruta según el tipo de línea y el sett
    │  ¿Qué tipo de línea tiene el cliente?                       │
    └──────────┬──────────────┬───────────────┬───────────────────┘
               │              │               │
-   AUTHORIZED │    SERVICE   │    SERVICE    │
-   (con estudio)  (crédito)    (client_funded)
-              │              │               │
-              ▼              ▼               ▼
-   RUTA A:           RUTA B:          RUTA C:
-   Pago anticipado   Con autorización  Client-funded
-   sin autorización  de socios         (fondeo previo)
+   AUTHORIZED │    SERVICE   │    SERVICE    │    SERVICE
+   (con estudio)  (crédito)    (client_funded)  (auto_release)
+              │              │               │        │
+              ▼              ▼               ▼        ▼
+   RUTA A:           RUTA B:          RUTA C:    RUTA D:
+   Línea aprobada    Con autorización  Fondeo     Liberación
+   sin autorización  de socios         previo     automática
 
 RUTA A — Línea Autorizada (con estudio de crédito):
   → Cliente ya fue evaluado por scoring + comité
@@ -509,7 +512,7 @@ RUTA A — Línea Autorizada (con estudio de crédito):
   → Consume disponible de la línea
   → Ir al paso 7
 
-RUTA B — Línea de Servicio a crédito (sin estudio, settlement = 'credit'):
+RUTA B — Línea de Servicio a crédito (settlement = 'credit'):
   → Se crea operación: status = 'pending_authorization'
   → settlement_type = 'credit'
   → M17 solicita autorización por facultades:
@@ -521,7 +524,7 @@ RUTA B — Línea de Servicio a crédito (sin estudio, settlement = 'credit'):
   → Consume disponible de la línea
   → Ir al paso 7
 
-RUTA C — Línea de Servicio client-funded (sin estudio, settlement = 'client_funded'):
+RUTA C — Línea de Servicio client-funded (settlement = 'client_funded'):
   → Se crea operación: status = 'pending_client_funding'
   → settlement_type = 'client_funded'
   → NO requiere autorización de socios (no hay riesgo)
@@ -531,12 +534,20 @@ RUTA C — Línea de Servicio client-funded (sin estudio, settlement = 'client_f
   → Admin confirma recepción → status = 'client_funded'
   → Ir al paso 7
 
+RUTA D — Línea de Servicio auto-release (settlement = 'auto_release'):
+  → Se crea operación: status = 'pending_disbursement'
+  → settlement_type = 'auto_release'
+  → NO requiere autorización de socios (cliente de confianza)
+  → Consume disponible de la línea (sí hay riesgo, pero controlado)
+  → Ir al paso 7
+  → Nota: solo para clientes con historial de pago rápido
+
 7. M05 genera contrato (sin DocuSign, solo email de confirmación)
 8. Xending ejecuta la operación:
-   - Ruta A/B: Admin libera pago → status = 'active'
+   - Ruta A/B/D: Admin libera pago → status = 'active'
    - Ruta C: Se ejecuta conversión/transferencia → status = 'executed'
 9. Mismo día: se concilia pago/operación
-   - Ruta A/B: cliente paga → status = 'paid', liberar disponible
+   - Ruta A/B/D: cliente paga → status = 'paid', liberar disponible
    - Ruta C: operación completada → status = 'completed'
 10. Registrar ganancia FX si aplica
 ```
@@ -547,13 +558,21 @@ Cada cliente tiene un `default_settlement_type` en su línea que determina la ru
 
 ```
 cs_credit_lines.default_settlement_type:
-  'credit'         → Ruta A (si authorized) o Ruta B (si service)
-  'client_funded'  → Ruta C siempre
+  'client_funded'  → Ruta C (default para clientes nuevos sin estudio)
+  'auto_release'   → Ruta D (clientes de confianza que siempre pagan rápido)
+  'credit'         → Ruta B (contingencia, cuando el cliente necesita crédito real)
 
-El analista puede cambiar el settlement_type por operación individual
-si cliente y Xending están de acuerdo (ej: un cliente client_funded
-que excepcionalmente necesita crédito → se cambia a 'credit' y aplica
-autorización de socios).
+Cambios de modo:
+  - Admin puede cambiar el default_settlement_type en cualquier momento
+  - No requiere re-aprobación ni comité
+  - Se registra en audit log quién cambió y cuándo
+  - El analista puede hacer override por operación individual
+
+Ejemplo Plásticos Villagar:
+  - Línea de servicio, default = 'client_funded'
+  - Operación normal: cliente fondea primero (Ruta C)
+  - Si pide crédito excepcional: analista cambia a 'credit' → dispara autorización socios (Ruta B)
+  - Si gana confianza con historial: admin cambia default a 'auto_release' (Ruta D)
 ```
 
 ### Matriz de decisión completa
@@ -565,6 +584,7 @@ autorización de socios).
 │ authorized   │ credit          │ NO           │ SÍ           │ Evaluado     │
 │ service      │ credit          │ SÍ (socios)  │ SÍ           │ Sin evaluar  │
 │ service      │ client_funded   │ NO           │ NO           │ Cero         │
+│ service      │ auto_release    │ NO           │ SÍ           │ Confianza    │
 └──────────────┴─────────────────┴──────────────┴──────────────┴──────────────┘
 ```
 
@@ -761,8 +781,9 @@ function calcAvailableAmount(
   activeOperations: CreditOperation[]
 ): number {
   // client_funded operations do NOT consume available (no credit risk)
+  // credit and auto_release DO consume available
   const utilized = activeOperations
-    .filter(op => op.settlement_type === 'credit')
+    .filter(op => op.settlement_type !== 'client_funded')
     .filter(op => ['active', 'overdue', 'pending_disbursement', 'pending_signature', 'pending_authorization'].includes(op.status))
     .reduce((sum, op) => sum + op.amount, 0);
   return approvedAmount - utilized;
@@ -773,7 +794,7 @@ function calcAvailableAmount(
 
 ```typescript
 type LineCategory = 'authorized' | 'service';
-type SettlementType = 'credit' | 'client_funded';
+type SettlementType = 'credit' | 'client_funded' | 'auto_release';
 
 interface AuthorizationRequirement {
   requires_authorization: boolean;
@@ -801,6 +822,15 @@ function determineAuthorizationRequired(
       requires_authorization: false,
       required_approvals: 0,
       reason: 'Client-funded: cliente fondea primero, sin riesgo',
+    };
+  }
+
+  // Línea de servicio + auto_release: no requiere autorización (confianza)
+  if (settlementType === 'auto_release') {
+    return {
+      requires_authorization: false,
+      required_approvals: 0,
+      reason: 'Auto-release: cliente de confianza, pago rápido',
     };
   }
 
@@ -1183,7 +1213,7 @@ Requiere: valor residual, depreciación, opción de compra.
 El `available_amount` de una línea se recalcula en tiempo real:
 ```
 available = approved_amount - SUM(amount) WHERE
-  settlement_type = 'credit' AND
+  settlement_type IN ('credit', 'auto_release') AND
   status IN (
     'pending_authorization', 'pending_signature',
     'pending_disbursement', 'active', 'overdue'
@@ -1191,6 +1221,7 @@ available = approved_amount - SUM(amount) WHERE
 ```
 Las operaciones `paid`, `paid_early`, `cancelled`, `defaulted` NO consumen disponible.
 Las operaciones `client_funded` NUNCA consumen disponible (no hay riesgo crediticio).
+Las operaciones `auto_release` SÍ consumen disponible (hay riesgo, aunque controlado).
 Nota: `defaulted` libera disponible pero la línea probablemente estará suspendida.
 
 ### 12.2 Moratorios diarios
