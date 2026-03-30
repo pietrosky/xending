@@ -162,6 +162,7 @@ cs_credit_operations                  -- Disposiciones individuales
   amount, disbursement_currency, payment_currency
   -- FX fields
   is_fx_operation, fx_rate_agreed, fx_rate_market, fx_payment_amount, fx_spread_gain
+  fx_daily_funding_cost, fx_rate_settlement, fx_early_discount
   -- Tasa e intereses
   annual_rate, rate_determination, interest_amount, iva_on_interest
   moratory_rate_monthly, moratory_amount, iva_on_moratory, moratory_days

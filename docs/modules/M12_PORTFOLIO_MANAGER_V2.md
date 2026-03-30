@@ -169,6 +169,8 @@ cs_credit_products
   default_annual_rate numeric         -- 0 para FX, 40 para Direct
   rate_type text                      -- 'fixed', 'variable', 'zero_spread'
   rate_determination_rule text        -- 'auto_by_currency' | 'manual' | 'market_based'
+  -- Costo de fondeo FX (default, override por operación)
+  default_fx_daily_funding_cost numeric default 0.01  -- centavos/día default (ej: $0.01)
   -- Configuración de plazo
   min_term_days int                   -- 1 (intradía) o 2
   max_term_days int                   -- 45
@@ -263,6 +265,11 @@ cs_credit_operations
   fx_rate_market numeric               -- TC mercado al momento del desembolso
   fx_payment_amount numeric            -- monto en moneda de pago (ej: 2,050,000 MXN)
   fx_spread_gain numeric               -- ganancia por spread (calculada al cierre)
+  -- FX fondeo y settlement
+  fx_daily_funding_cost numeric        -- costo diario de fondeo en TC (configurable por operación)
+                                       -- Default viene del producto, promotor puede override al crear
+  fx_rate_settlement numeric           -- TC de cierre real (ajustado si pago anticipado)
+  fx_early_discount numeric            -- descuento por pago anticipado (daily_cost × días_no_usados)
   -- Tasa e intereses
   annual_rate numeric not null         -- 0 para FX, 40 para Direct (determinada automáticamente)
   rate_determination text              -- 'auto_cross_currency' | 'auto_same_currency' | 'manual_override'
@@ -586,16 +593,59 @@ Ejemplo cliente sin estudio:
 1. Se registra pago (manual o vía M16 Banking conciliación)
 2. Validar:
    - Monto pagado = total_payable (no parciales en Fase 1)
-   - Si pago anticipado: recalcular intereses al día real de pago
-3. Actualizar operación:
+
+3. SI es operación FX (is_fx_operation = true):
+
+   El TC pactado incluye un costo de fondeo diario (configurable por operación/promotor).
+   Si el cliente paga antes del vencimiento, se descuentan los días no utilizados.
+
+   Composición del TC pactado al crear la operación:
+     fx_rate_agreed = fx_rate_market + (fx_daily_funding_cost × term_days)
+
+   Al recibir pago:
+     SI pago anticipado (días_reales < term_days):
+       días_no_usados = term_days - días_reales
+       fx_early_discount = fx_daily_funding_cost × días_no_usados
+       fx_rate_settlement = fx_rate_agreed - fx_early_discount
+
+     SI pago en tiempo o tardío:
+       fx_rate_settlement = fx_rate_agreed (sin descuento)
+
+     Opción admin: override manual del fx_rate_settlement
+     (acuerdo especial, se registra motivo en audit log)
+
+   Cálculos finales:
+     fx_payment_amount_final = amount × fx_rate_settlement
+     fx_spread_gain = amount × (fx_rate_settlement - fx_rate_market)
+
+   Ejemplo:
+     TC mercado: $20.00, costo fondeo: $0.02/día, plazo: 30 días
+     TC pactado: $20.00 + ($0.02 × 30) = $20.60
+     Monto: $100,000 USD → cliente debe: $2,060,000 MXN
+
+     Pago 10 días antes:
+       Descuento: $0.02 × 10 = $0.20
+       TC cierre: $20.60 - $0.20 = $20.40
+       Cliente paga: $2,040,000 MXN (ahorra $20,000 MXN)
+       Ganancia Xending: $100K × ($20.40 - $20.00) = $40,000 MXN
+
+4. SI es operación Direct Lending (misma moneda):
+   - Si pago anticipado: recalcular intereses al día real
+     (documentado en flujo 4.6)
+   - Si pago en tiempo: intereses originales
+
+5. Actualizar operación:
    - paid_at = fecha del pago
    - paid_amount = monto recibido
    - paid_currency = moneda del pago
    - payment_reference = referencia bancaria
    - status = 'paid' o 'paid_early'
-4. Si es FX: calcular fx_spread_gain real
-5. Liberar disponible: credit_line.available_amount += operation.amount
-6. Cancelar alertas pendientes de esta operación
+   - Si FX: fx_rate_settlement, fx_early_discount, fx_spread_gain
+
+6. Liberar disponible: credit_line.available_amount += operation.amount
+   (solo si settlement_type = 'credit')
+
+7. Cancelar alertas pendientes de esta operación
 ```
 
 ### 4.4 Flujo: Operación vencida (overdue)
