@@ -203,11 +203,14 @@ Más de $350,000 USD:        5 de 5 socios (unanimidad)
 
 | ID | Módulo | Estado | Descripción |
 |----|--------|--------|-------------|
-| I01 | Data Layer Compartido | POR CONSTRUIR | cs_companies, cs_provider_data. Datos reutilizables |
+| I01 | Data Layer Compartido | POR CONSTRUIR | cs_companies, cs_provider_data histórico por periodo |
 | I02 | Module Registry | POR CONSTRUIR | Catálogo módulos, configuración por tenant, pesos |
 | I03 | Event Bus | POR CONSTRUIR | Comunicación entre módulos vía eventos |
 | I04 | Tenant Management | POR CONSTRUIR | Multi-tenant, whitelabel, branding |
 | I05 | Scheduled Events | POR CONSTRUIR | Eventos programados: vencimientos, renovaciones, PLD |
+| I06 | API Layer | POR CONSTRUIR | API REST unificada (Supabase Edge Functions). Input/output de toda la plataforma |
+| I07 | RAG | POR CONSTRUIR | Indexación de contratos, políticas, minutas, emails con pgvector |
+| I08 | MCP Server | POR CONSTRUIR | Expone funciones como MCP tools para agentes AI (Claude, Kiro, etc.) |
 
 ---
 
@@ -419,44 +422,49 @@ Campo `tenant_id` en tablas clave (default 'xending'). El código no asume singl
 ## Plan de construcción por bloques
 
 ### Bloque 1: Fundación + Onboarding
-- I01 Data Layer
-- M01 Onboarding público
-- Pre-filtro simplificado (ventas mensuales MXN)
+- I01 Data Layer (cs_companies, cs_data_extractions, cs_provider_data)
+- I06 API Layer (endpoints básicos: companies, expedientes)
+- M01 Onboarding público (landing + formulario + pre-filtro)
 - Migración para cs_companies y campos nuevos en cs_expedientes
 
 ### Bloque 2: Portal solicitante + datos reales
 - UI pública vía token (firma Buró, CIEC, upload docs)
 - Conectar engines con datos reales de Syntage
+- I06 API: endpoints de scoring y expedientes
 - Email templates reales
 
 ### Bloque 3: Documentación + KYB + Decisión
-- M03c Financieros manuales
-- M06 KYB (Scory)
-- M07 Listas Negras
-- M17 Comité y Facultades
+- M03c Financieros manuales (upload + OCR vía Scory)
+- M06 KYB (Scory) — después del scoring
+- M07 Listas Negras (Scory + Hawk)
+- M17 Comité y Facultades (autorización por socios)
 - Re-scoring después de documentación
+- I06 API: endpoints de autorizaciones
 
 ### Bloque 4: Contratos + Cartera
 - M05 Contratos (templates + DocuSign)
-- M12 Gestor de Cartera (líneas revolventes + operaciones)
+- M12 Gestor de Cartera (líneas revolventes + operaciones + intradía)
 - I05 Scheduled Events (vencimientos + alertas)
-- Flujo intradía con facultades
+- I06 API: endpoints de cartera y documentos
 
 ### Bloque 5: Monitoreo + Compliance
-- M08 Monitoreo PLD
-- M09 Compliance Officer
+- M08 Monitoreo PLD (re-checks periódicos)
+- M09 Compliance Officer (dashboard + reportes regulatorios)
 - M13 Covenant Tracking UI
 - Renovación anual automática
+- I06 API: endpoints de compliance
 
-### Bloque 6: Portal público + Cobranza
-- M10 Portal Empresa (dashboard gratuito)
-- M11 Cobranza Inteligente
-- M14 Agente Conversacional (básico)
+### Bloque 6: Portal público + Cobranza + AI
+- M10 Portal Empresa (dashboard gratuito de salud financiera)
+- M11 Cobranza Inteligente (facturas PPD vs pagos)
+- I08 MCP Server (exponer funciones como tools para agentes)
+- M14 Agente Conversacional (sobre datos estructurados)
+- I07 RAG (contratos, políticas, minutas, emails)
 
 ### Bloque 7: SaaS + Multi-tenant
-- I02 Module Registry
-- I03 Event Bus
-- I04 Tenant Management
-- M03 Refactor pesos dinámicos
-- M16 Banking
-- Whitelabel completo
+- I02 Module Registry (activación/desactivación por tenant)
+- I03 Event Bus (comunicación formal entre módulos)
+- I04 Tenant Management (whitelabel completo)
+- M03 Refactor pesos dinámicos + engine registry
+- M16 Banking (conexión bancaria)
+- M15 FX integración con crédito
