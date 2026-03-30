@@ -151,6 +151,7 @@ cs_credit_lines                       -- Líneas de crédito aprobadas
   approved_amount, currency, available_amount
   start_date, expiry_date, annual_renewal_date
   interest_rate_override, status, suspension_reason
+  default_settlement_type (credit, client_funded)
   conditions jsonb, line_contract_id
   approved_by, approved_at
 

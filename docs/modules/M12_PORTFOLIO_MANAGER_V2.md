@@ -226,6 +226,11 @@ cs_credit_lines
   annual_renewal_date date             -- próxima renovación
   -- Tasa (heredada del producto, override posible)
   interest_rate_override numeric       -- null = usa la del producto
+  -- Settlement default del cliente
+  default_settlement_type text not null default 'credit'
+    -- 'credit'         → Xending desembolsa primero (Ruta A o B según line_category)
+    -- 'client_funded'  → Cliente fondea primero (Ruta C, sin riesgo)
+    -- El analista puede hacer override por operación individual
   -- Estado
   status text not null default 'active'
     -- 'pending_contract', 'active', 'suspended', 'expired',
@@ -474,32 +479,93 @@ cs_portfolio_daily_position
     - Si no paga → status = 'overdue', comienzan moratorios
 ```
 
-### 4.2 Flujo: Operación intradía
+### 4.2 Flujo: Operación intradía (mismo día)
+
+El sistema determina automáticamente la ruta según el tipo de línea y el settlement_type default del cliente.
 
 ```
-1. Analista ingresa datos (igual que estándar)
-2. Sistema valida y calcula
-3. Sistema verifica tipo de línea:
+1. Analista selecciona cliente e ingresa datos:
+   - Monto, moneda de pago, TC si FX
+2. Sistema valida y calcula (producto, tasa, total)
+3. Sistema determina la ruta según línea + settlement:
 
-   SI línea = 'authorized' (con estudio de crédito):
-     → No requiere autorización de socios
-     → Se crea operación: status = 'pending_disbursement'
-     → Saltar al paso 7
+   ┌─────────────────────────────────────────────────────────────┐
+   │  ¿Qué tipo de línea tiene el cliente?                       │
+   └──────────┬──────────────┬───────────────┬───────────────────┘
+              │              │               │
+   AUTHORIZED │    SERVICE   │    SERVICE    │
+   (con estudio)  (crédito)    (client_funded)
+              │              │               │
+              ▼              ▼               ▼
+   RUTA A:           RUTA B:          RUTA C:
+   Pago anticipado   Con autorización  Client-funded
+   sin autorización  de socios         (fondeo previo)
 
-   SI línea = 'service' (sin estudio de crédito):
-     → Se crea operación: status = 'pending_authorization'
-     → M17 solicita autorización por facultades:
-       - Hasta $100K USD → 3 de 5 socios
-       - $100K-$350K → 4 de 5 socios
-       - >$350K → 5 de 5 socios
-     → Socios autorizan vía email/link
-     → Cuando se alcanza quórum → status = 'pending_disbursement'
+RUTA A — Línea Autorizada (con estudio de crédito):
+  → Cliente ya fue evaluado por scoring + comité
+  → NO requiere autorización de socios
+  → Se crea operación: status = 'pending_disbursement'
+  → settlement_type = 'credit'
+  → Consume disponible de la línea
+  → Ir al paso 7
 
-7. M05 genera contrato (sin DocuSign, solo email)
-8. Admin libera pago → status = 'active'
-9. available_amount -= operation.amount
-10. Mismo día: se concilia pago → status = 'paid'
-11. available_amount += operation.amount
+RUTA B — Línea de Servicio a crédito (sin estudio, settlement = 'credit'):
+  → Se crea operación: status = 'pending_authorization'
+  → settlement_type = 'credit'
+  → M17 solicita autorización por facultades:
+    - Hasta $100K USD → 3 de 5 socios
+    - $100K-$350K → 4 de 5 socios
+    - >$350K → 5 de 5 socios
+  → Socios autorizan vía email/link
+  → Cuando se alcanza quórum → status = 'pending_disbursement'
+  → Consume disponible de la línea
+  → Ir al paso 7
+
+RUTA C — Línea de Servicio client-funded (sin estudio, settlement = 'client_funded'):
+  → Se crea operación: status = 'pending_client_funding'
+  → settlement_type = 'client_funded'
+  → NO requiere autorización de socios (no hay riesgo)
+  → NO consume disponible de la línea
+  → Se notifica al cliente monto a depositar + cuenta destino
+  → Cliente deposita fondos
+  → Admin confirma recepción → status = 'client_funded'
+  → Ir al paso 7
+
+7. M05 genera contrato (sin DocuSign, solo email de confirmación)
+8. Xending ejecuta la operación:
+   - Ruta A/B: Admin libera pago → status = 'active'
+   - Ruta C: Se ejecuta conversión/transferencia → status = 'executed'
+9. Mismo día: se concilia pago/operación
+   - Ruta A/B: cliente paga → status = 'paid', liberar disponible
+   - Ruta C: operación completada → status = 'completed'
+10. Registrar ganancia FX si aplica
+```
+
+### Configuración default del cliente
+
+Cada cliente tiene un `default_settlement_type` en su línea que determina la ruta por default:
+
+```
+cs_credit_lines.default_settlement_type:
+  'credit'         → Ruta A (si authorized) o Ruta B (si service)
+  'client_funded'  → Ruta C siempre
+
+El analista puede cambiar el settlement_type por operación individual
+si cliente y Xending están de acuerdo (ej: un cliente client_funded
+que excepcionalmente necesita crédito → se cambia a 'credit' y aplica
+autorización de socios).
+```
+
+### Matriz de decisión completa
+
+```
+┌──────────────┬─────────────────┬──────────────┬──────────────┬──────────────┐
+│ line_category│ settlement_type │ Autorización │ Usa línea    │ Riesgo       │
+├──────────────┼─────────────────┼──────────────┼──────────────┼──────────────┤
+│ authorized   │ credit          │ NO           │ SÍ           │ Evaluado     │
+│ service      │ credit          │ SÍ (socios)  │ SÍ           │ Sin evaluar  │
+│ service      │ client_funded   │ NO           │ NO           │ Cero         │
+└──────────────┴─────────────────┴──────────────┴──────────────┴──────────────┘
 ```
 
 ### 4.3 Flujo: Pago recibido
