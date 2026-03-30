@@ -516,8 +516,9 @@ RUTA B — Crédito con liberación automática (authorized + credit):
   → Consume disponible de la línea
   → Ir al paso 7
 
-RUTA C — Solicitud de crédito anticipado (excepción, botón):
-  → Solo para líneas de servicio cuando cliente necesita crédito puntual
+RUTA C — Solicitud de crédito anticipado (SIN ESTUDIO DE CRÉDITO — excepción, botón):
+  → Solo para líneas de servicio (SIN estudio de crédito) cuando cliente necesita crédito puntual
+  → El cliente NO tiene scoring ni aprobación de comité
   → Analista presiona botón "Solicitar crédito anticipado"
   → Se crea operación: status = 'pending_authorization'
   → settlement_type = 'credit' (override puntual, no cambia default)
@@ -575,7 +576,7 @@ Ejemplo cliente sin estudio:
 │ authorized   │ client_funded   │ NO           │ NO           │ Cero         │
 │ authorized   │ credit          │ NO           │ SÍ           │ Evaluado     │
 │ service      │ client_funded   │ NO           │ NO           │ Cero         │
-│ service      │ credit (botón)  │ SÍ (socios)  │ SÍ           │ Sin evaluar  │
+│ service      │ credit (botón)  │ SÍ (socios)  │ SÍ           │ SIN ESTUDIO  │
 └──────────────┴─────────────────┴──────────────┴──────────────┴──────────────┘
 ```
 
