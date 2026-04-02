@@ -31,24 +31,29 @@ function SourceBox({ id, name, provider, items, color }: {
   );
 }
 
-function EngineBox({ name, weight, source, isGate }: {
+function EngineBox({ name, weight, source, isGate, engineId }: {
   name: string;
   weight: string;
   source: string;
   isGate?: boolean;
+  engineId: string;
 }) {
   return (
-    <div className={`rounded border p-2 text-xs ${
-      isGate
-        ? 'border-red-400/50 bg-red-500/5'
-        : 'border-border bg-card'
-    }`}>
+    <Link
+      to={`/fichas-tecnicas#${engineId}`}
+      className={`rounded border p-2 text-xs block hover:ring-2 hover:ring-primary/30 transition-all ${
+        isGate
+          ? 'border-red-400/50 bg-red-500/5'
+          : 'border-border bg-card'
+      }`}
+    >
       <div className="font-semibold text-foreground">{name}</div>
       <div className="text-muted-foreground">
         {isGate ? 'GATE — pasa o bloquea' : `Peso: ${weight}`}
       </div>
       <div className="text-[10px] text-muted-foreground mt-0.5">Fuente: {source}</div>
-    </div>
+      <div className="text-[10px] text-primary mt-1">Ver ficha tecnica →</div>
+    </Link>
   );
 }
 
@@ -60,10 +65,6 @@ function Arrow({ label }: { label?: string }) {
       {label && <div className="text-[10px] text-muted-foreground">{label}</div>}
     </div>
   );
-}
-
-function HorizontalArrow() {
-  return <div className="text-muted-foreground text-lg self-center px-1">→</div>;
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -155,11 +156,11 @@ export function DataMapPage() {
           Alimentados por datos del SAT (Syntage)
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          <EngineBox name="Facturacion SAT" weight="14%" source="M03a SAT" />
-          <EngineBox name="Red de Clientes" weight="8%" source="M03a SAT" />
-          <EngineBox name="Estabilidad" weight="9%" source="M03a SAT" />
-          <EngineBox name="Empleados" weight="3%" source="M03a SAT" />
-          <EngineBox name="Riesgo Cambiario" weight="7%" source="M03a SAT" />
+          <EngineBox name="Facturacion SAT" weight="14%" source="M03a SAT" engineId="sat_facturacion" />
+          <EngineBox name="Red de Clientes" weight="8%" source="M03a SAT" engineId="network" />
+          <EngineBox name="Estabilidad" weight="9%" source="M03a SAT" engineId="stability" />
+          <EngineBox name="Empleados" weight="3%" source="M03a SAT" engineId="employee" />
+          <EngineBox name="Riesgo Cambiario" weight="7%" source="M03a SAT" engineId="fx_risk" />
         </div>
       </div>
 
@@ -170,7 +171,7 @@ export function DataMapPage() {
           Alimentado por Buro de Credito (Syntage)
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          <EngineBox name="Buro de Credito" weight="10%" source="M03b Buro" />
+          <EngineBox name="Buro de Credito" weight="10%" source="M03b Buro" engineId="buro" />
         </div>
       </div>
 
@@ -181,9 +182,9 @@ export function DataMapPage() {
           Alimentados por SAT + Financieros manuales
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          <EngineBox name="Flujo de Efectivo" weight="16%" source="M03a + M03c" />
-          <EngineBox name="Financiero" weight="11%" source="M03a + M03c" />
-          <EngineBox name="Capital de Trabajo" weight="4%" source="M03a + M03c" />
+          <EngineBox name="Flujo de Efectivo" weight="16%" source="M03a + M03c" engineId="cashflow" />
+          <EngineBox name="Financiero" weight="11%" source="M03a + M03c" engineId="financial" />
+          <EngineBox name="Capital de Trabajo" weight="4%" source="M03a + M03c" engineId="working_capital" />
         </div>
       </div>
 
@@ -194,10 +195,10 @@ export function DataMapPage() {
           Datos internos + Expediente
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          <EngineBox name="Riesgo Operativo" weight="9%" source="M03e Reg. Publico" />
-          <EngineBox name="Documentacion" weight="4%" source="Expediente" />
-          <EngineBox name="Portafolio" weight="5%" source="Datos internos" />
-          <EngineBox name="Benchmark" weight="ref." source="Industria / Cartera" />
+          <EngineBox name="Riesgo Operativo" weight="9%" source="M03e Reg. Publico" engineId="operational" />
+          <EngineBox name="Documentacion" weight="4%" source="Expediente" engineId="documentation" />
+          <EngineBox name="Portafolio" weight="5%" source="Datos internos" engineId="portfolio" />
+          <EngineBox name="Benchmark" weight="ref." source="Industria / Cartera" engineId="benchmark" />
         </div>
       </div>
 
@@ -208,9 +209,9 @@ export function DataMapPage() {
           Gates — No dan puntos, pero bloquean si fallan
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          <EngineBox name="Cumplimiento PLD" weight="" source="M03d Scory" isGate />
-          <EngineBox name="Garantias" weight="" source="Expediente" isGate />
-          <EngineBox name="Fraude en Red" weight="" source="M03a + M03d" isGate />
+          <EngineBox name="Cumplimiento PLD" weight="" source="M03d Scory" isGate engineId="compliance" />
+          <EngineBox name="Garantias" weight="" source="Expediente" isGate engineId="guarantee" />
+          <EngineBox name="Fraude en Red" weight="" source="M03a + M03d" isGate engineId="graph_fraud" />
         </div>
       </div>
 

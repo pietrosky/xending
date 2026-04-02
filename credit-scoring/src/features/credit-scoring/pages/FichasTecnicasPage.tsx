@@ -6,8 +6,8 @@
  * puro texto util para que el analista valide.
  */
 
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react';
 
 // ─── Tipos ───────────────────────────────────────────────────────────
@@ -288,11 +288,18 @@ const SECCION_PE = {
 
 // ─── Componente Accordion ────────────────────────────────────────────
 
-function FichaAccordion({ ficha }: { ficha: FichaMotor }) {
-  const [open, setOpen] = useState(false);
+function FichaAccordion({ ficha, defaultOpen }: { ficha: FichaMotor; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (defaultOpen && ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [defaultOpen]);
 
   return (
-    <div className={`rounded-lg border ${ficha.esGate ? 'border-red-400/40' : 'border-border'} bg-card`}>
+    <div ref={ref} id={ficha.id} className={`rounded-lg border ${ficha.esGate ? 'border-red-400/40' : 'border-border'} bg-card ${defaultOpen ? 'ring-2 ring-primary/30' : ''}`}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -357,6 +364,8 @@ function FichaAccordion({ ficha }: { ficha: FichaMotor }) {
 // ─── Pagina ──────────────────────────────────────────────────────────
 
 export function FichasTecnicasPage() {
+  const location = useLocation();
+  const hashId = location.hash.replace('#', '');
   const motoresConPeso = FICHAS.filter((f) => !f.esGate);
   const gates = FICHAS.filter((f) => f.esGate);
 
@@ -383,7 +392,7 @@ export function FichasTecnicasPage() {
       </div>
       <div className="space-y-2 mb-8">
         {motoresConPeso.map((f) => (
-          <FichaAccordion key={f.id} ficha={f} />
+          <FichaAccordion key={f.id} ficha={f} defaultOpen={f.id === hashId} />
         ))}
       </div>
 
@@ -393,7 +402,7 @@ export function FichasTecnicasPage() {
       </div>
       <div className="space-y-2 mb-8">
         {gates.map((f) => (
-          <FichaAccordion key={f.id} ficha={f} />
+          <FichaAccordion key={f.id} ficha={f} defaultOpen={f.id === hashId} />
         ))}
       </div>
 
