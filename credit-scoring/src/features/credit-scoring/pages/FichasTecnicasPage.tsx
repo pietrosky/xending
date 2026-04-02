@@ -9,6 +9,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react';
+import { DEMO_VALUES, DEMO_SCORES } from '../lib/fichasDemoValues';
 
 // ─── Tipos ───────────────────────────────────────────────────────────
 
@@ -321,34 +322,62 @@ function FichaAccordion({ ficha, defaultOpen }: { ficha: FichaMotor; defaultOpen
         <div className="px-4 pb-4 space-y-3">
           <p className="text-xs text-muted-foreground">{ficha.descripcion}</p>
 
+          {/* Score demo badge */}
+          {DEMO_SCORES[ficha.id] && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground">Score demo:</span>
+              <span className={`text-sm font-semibold px-2 py-0.5 rounded ${
+                (DEMO_SCORES[ficha.id]?.score ?? 0) >= 80 ? 'bg-green-500/10 text-green-600' :
+                (DEMO_SCORES[ficha.id]?.score ?? 0) >= 60 ? 'bg-yellow-500/10 text-yellow-600' :
+                'bg-red-500/10 text-red-600'
+              }`}>
+                {DEMO_SCORES[ficha.id]?.score}/100 ({DEMO_SCORES[ficha.id]?.grade})
+              </span>
+              <span className="text-[10px] text-muted-foreground italic">Empresa demo: Comercializadora del Norte S.A.</span>
+            </div>
+          )}
+
           <div className="text-xs space-y-1">
             <div><span className="text-muted-foreground">Fuente de datos:</span> <span className="text-foreground">{ficha.fuente}</span></div>
             <div><span className="text-muted-foreground">Tabla en BD:</span> <span className="font-mono text-foreground">{ficha.tabla}</span></div>
           </div>
 
-          {/* Tabla de metricas */}
+          {/* Tabla de metricas con valores demo */}
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-1.5 text-muted-foreground font-medium">Metrica</th>
                 <th className="text-left py-1.5 text-muted-foreground font-medium">Formula</th>
-                <th className="text-left py-1.5 text-muted-foreground font-medium">Donde verificar</th>
+                <th className="text-left py-1.5 text-muted-foreground font-medium">Valor (demo)</th>
                 <th className="text-left py-1.5 text-muted-foreground font-medium">Bueno</th>
                 <th className="text-left py-1.5 text-muted-foreground font-medium">Malo</th>
               </tr>
             </thead>
             <tbody>
-              {ficha.metricas.map((m) => (
-                <tr key={m.nombre} className="border-b border-border/50">
-                  <td className="py-1.5 font-medium text-foreground">{m.nombre}</td>
-                  <td className="py-1.5 font-mono text-foreground">{m.formula}</td>
-                  <td className="py-1.5 text-muted-foreground">{m.donde}</td>
-                  <td className="py-1.5 text-green-600">{m.bueno ?? '—'}</td>
-                  <td className="py-1.5 text-red-500">{m.malo ?? '—'}</td>
-                </tr>
-              ))}
+              {ficha.metricas.map((m) => {
+                const demoVal = DEMO_VALUES[ficha.id]?.[m.nombre];
+                return (
+                  <tr key={m.nombre} className="border-b border-border/50">
+                    <td className="py-1.5 font-medium text-foreground">{m.nombre}</td>
+                    <td className="py-1.5 font-mono text-foreground">{m.formula}</td>
+                    <td className="py-1.5 font-semibold text-primary">{demoVal ?? '—'}</td>
+                    <td className="py-1.5 text-green-600">{m.bueno ?? '—'}</td>
+                    <td className="py-1.5 text-red-500">{m.malo ?? '—'}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+
+          {/* Donde verificar (colapsado) */}
+          <details className="text-xs">
+            <summary className="text-muted-foreground cursor-pointer hover:text-foreground">Donde verificar cada dato</summary>
+            <div className="mt-2 space-y-1 pl-3">
+              {ficha.metricas.map((m) => (
+                <div key={m.nombre}><span className="font-medium text-foreground">{m.nombre}:</span> <span className="text-muted-foreground">{m.donde}</span></div>
+              ))}
+            </div>
+          </details>
 
           {ficha.ejemplo && (
             <div className="bg-muted/30 rounded p-2 text-xs font-mono text-foreground">
