@@ -520,6 +520,7 @@ RUTA A — Client-funded (default para todos los clientes nuevos):
 RUTA B — Crédito con liberación automática (authorized + credit):
   → Solo disponible si line_category = 'authorized' Y default_settlement = 'credit'
   → Se crea operación: status = 'pending_disbursement'
+   → se crea contrato y manda a firma, cliente firma y se procede a liberacion
   → settlement_type = 'credit'
   → NO requiere autorización (tiene estudio de crédito)
   → Consume disponible de la línea
