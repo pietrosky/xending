@@ -78,9 +78,18 @@ CREATE TABLE cs_module_config (
 // cs_module_config - reglas de pre-filtro
 { "tenant_id": "xending", "module_id": "M01", "config_key": "pre_filter_thresholds",
   "config_value": {
-    "100000": 8000000,
-    "250000": 15000000,
-    "500000": 30000000
+    {
+      "credit": 100_000,
+      "sales": 8_000_000
+    },
+    {
+      "credit": 250_000,
+      "sales": 15_000_000
+    },
+    {
+      "credit": 500_000,
+      "sales": 30_000_000
+    }
   }
 }
 ```

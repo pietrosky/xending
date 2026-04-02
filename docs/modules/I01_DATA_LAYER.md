@@ -48,7 +48,7 @@ Por ahora, Syntage + SAT es la fuente de verdad. Los ERPs se agregan como fuente
 ```sql
 CREATE TABLE cs_companies (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id TEXT NOT NULL DEFAULT 'xending',
+  tenant_id TEXT NOT NULL DEFAULT 'xending', -- INDEX required
   rfc TEXT NOT NULL,
   legal_name TEXT NOT NULL,
   trade_name TEXT,
@@ -104,6 +104,7 @@ CREATE TABLE cs_data_extractions (
   period_from DATE,
   period_to DATE,
   error_message TEXT,
+  content TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ```
@@ -121,9 +122,10 @@ CREATE TABLE cs_provider_data (
   company_id UUID NOT NULL REFERENCES cs_companies(id),
   extraction_id UUID REFERENCES cs_data_extractions(id),
   provider TEXT NOT NULL,
-  data_type TEXT NOT NULL,
-  period_key TEXT NOT NULL,
+  period_start DATE NOT NULL,
+  period_end DATE NOT NULL,
   period_type TEXT NOT NULL
+    CHECK (period_type IN ('monthly', 'quarterly', 'annual', 'point_in_time')),
     CHECK (period_type IN ('monthly', 'quarterly', 'annual', 'point_in_time')),
   data_payload JSONB NOT NULL,
   record_count INT,
@@ -136,32 +138,32 @@ CREATE TABLE cs_provider_data (
 -- Índices para queries frecuentes
 CREATE INDEX idx_provider_data_company ON cs_provider_data(company_id);
 CREATE INDEX idx_provider_data_type ON cs_provider_data(company_id, data_type);
-CREATE INDEX idx_provider_data_current ON cs_provider_data(company_id, data_type, is_current)
+CREATE INDEX idx_provider_data_period ON cs_provider_data(company_id, data_type, period_start, period_end);
   WHERE is_current = true;
-CREATE INDEX idx_provider_data_period ON cs_provider_data(company_id, data_type, period_key);
+CREATE INDEX idx_provider_data_period ON cs_provider_data(company_id, data_type, period_start);
 ```
 
 ---
 
-## Tipos de datos y sus periodos
-
-| data_type | period_type | period_key ejemplo | Qué contiene |
-|-----------|-------------|-------------------|-------------|
-| invoices_issued | monthly | '2024-01' | Facturas emitidas de enero 2024 |
-| invoices_received | monthly | '2024-01' | Facturas recibidas de enero 2024 |
-| payroll_invoices | monthly | '2024-01' | CFDIs de nómina de enero 2024 |
-| tax_return_annual | annual | '2024' | Declaración anual 2024 |
-| tax_return_monthly | monthly | '2024-01' | Declaración mensual enero 2024 |
-| tax_status | point_in_time | '2026-03-15' | Constancia de situación fiscal |
-| compliance_opinion | point_in_time | '2026-03-15' | Opinión de cumplimiento SAT |
-| electronic_accounting | monthly | '2024-01' | Balanza de comprobación enero 2024 |
-| buro_report | point_in_time | '2026-03-15' | Reporte completo de Buró |
-| buro_score | point_in_time | '2026-03-15' | Score PyME |
-| hawk_checks | point_in_time | '2026-03-15' | Resultados de Hawk Checks |
-| pld_check | point_in_time | '2026-03-15' | Resultado PLD/KYC de Scory |
-| kyb_result | point_in_time | '2026-03-15' | Resultado KYB de Scory |
-| financial_statements | quarterly | '2026-Q1' | Estados financieros manuales |
-| bank_statements | monthly | '2026-03' | Estado de cuenta bancario (futuro) |
+| data_type | period_type | period_start | period_end | Qué contiene |
+|-----------|-------------|------------|------------|-------------|
+| invoices_issued | monthly | '2024-01-01' | '2024-01-31' | Facturas emitidas de enero 2024 |
+| invoices_received | monthly | '2024-01-01' | '2024-01-31' | Facturas recibidas de enero 2024 |
+| payroll_invoices | monthly | '2024-01-01' | '2024-01-31' | CFDIs de nómina de enero 2024 |
+| tax_return_annual | annual | '2024-01-01' | '2024-12-31' | Declaración anual 2024 |
+| tax_return_monthly | monthly | '2024-01-01' | '2024-01-31' | Declaración mensual enero 2024 |
+| tax_status | point_in_time | '2026-03-15' | '2026-03-15' | Constancia de situación fiscal |
+| compliance_opinion | point_in_time | '2026-03-15' | '2026-03-15' | Opinión de cumplimiento SAT |
+| electronic_accounting | monthly | '2024-01-01' | '2024-01-31' | Balanza de comprobación enero 2024 |
+| buro_report | point_in_time | '2026-03-15' | '2026-03-15' | Reporte completo de Buró |
+| buro_score | point_in_time | '2026-03-15' | '2026-03-15' | Score PyME |
+| hawk_checks | point_in_time | '2026-03-15' | '2026-03-15' | Resultados de Hawk Checks |
+| pld_check | point_in_time | '2026-03-15' | '2026-03-15' | Resultado PLD/KYC de Scory |
+| kyb_result | point_in_time | '2026-03-15' | '2026-03-15' | Resultado KYB de Scory |
+| financial_statements | quarterly | '2026-01-01' | '2026-03-31' | Estados financieros manuales |
+| bank_statements | monthly | '2026-03-01' | '2026-03-31' | Estado de cuenta bancario (futuro) |
+| erp_invoices | monthly | '2026-03-01' | '2026-03-31' | Facturas desde ERP (futuro) |
+| insights | point_in_time | '2026-03-15' | '2026-03-15' | Métricas pre-calculadas por Syntage |
 | erp_invoices | monthly | '2026-03' | Facturas desde ERP (futuro) |
 | insights | point_in_time | '2026-03-15' | Métricas pre-calculadas por Syntage |
 
@@ -209,11 +211,11 @@ cs_provider_data agrega:
 ### Re-extracción de un periodo (corrección)
 
 ```
-Se detecta que marzo 2026 tenía facturas faltantes.
-
 Se re-extrae marzo:
-  Registro viejo: { period_key: '2026-03', is_current: false, superseded_by: nuevo_id }
-  Registro nuevo: { period_key: '2026-03', is_current: true }
+  Registro viejo: { period_start: '2026-03-01', period_end: '2026-03-31', is_current: false, superseded_by: nuevo_id }
+  Registro nuevo: { period_start: '2026-03-01', period_end: '2026-03-31', is_current: true }
+  Registro viejo: { period_start: '2026-03', is_current: false, superseded_by: nuevo_id }
+  Registro nuevo: { period_start: '2026-03', is_current: true }
 
 La historia se mantiene. Puedes ver qué tenías antes y qué tienes ahora.
 ```
@@ -221,39 +223,37 @@ La historia se mantiene. Puedes ver qué tenías antes y qué tienes ahora.
 ### Consulta de Buró semestral
 
 ```
-Cada 6 meses se re-consulta Buró.
-
 cs_provider_data:
-  { data_type: 'buro_report', period_key: '2026-03-15', is_current: false }
-  { data_type: 'buro_report', period_key: '2026-09-15', is_current: true }
+  { data_type: 'buro_report', period_start: '2026-03-15', period_end: '2026-03-15', is_current: false }
+  { data_type: 'buro_report', period_start: '2026-09-15', period_end: '2026-09-15', is_current: true }
+  { data_type: 'buro_report', period_start: '2026-03-15', is_current: false }
+  { data_type: 'buro_report', period_start: '2026-09-15', is_current: true }
 
 Puedes comparar: ¿mejoró o empeoró el score en 6 meses?
 ```
 
 ---
 
-## Queries frecuentes
-
 ```sql
 -- Historia completa de facturación de ABC (solo versiones actuales)
-SELECT period_key, record_count, 
+SELECT period_start, period_end, record_count, 
        (data_payload->>'total_amount')::numeric as total
 FROM cs_provider_data
 WHERE company_id = 'abc-uuid'
   AND data_type = 'invoices_issued'
   AND is_current = true
-ORDER BY period_key;
+ORDER BY period_start;
 
 -- Últimos 12 meses de facturas
 SELECT * FROM cs_provider_data
 WHERE company_id = 'abc-uuid'
   AND data_type = 'invoices_issued'
   AND is_current = true
-  AND period_key >= to_char(now() - interval '12 months', 'YYYY-MM')
-ORDER BY period_key;
+  AND period_start >= (now() - interval '12 months')::date
+ORDER BY period_start;
 
 -- Evolución del score de Buró
-SELECT period_key, extracted_at,
+SELECT period_start, extracted_at,
        (data_payload->>'score')::int as score
 FROM cs_provider_data
 WHERE company_id = 'abc-uuid'
@@ -261,17 +261,17 @@ WHERE company_id = 'abc-uuid'
 ORDER BY extracted_at;
 
 -- Comparar declaración anual 2024 vs 2025
-SELECT period_key, data_payload
+SELECT period_start, period_end, data_payload
 FROM cs_provider_data
 WHERE company_id = 'abc-uuid'
   AND data_type = 'tax_return_annual'
-  AND period_key IN ('2024', '2025')
+  AND period_start IN ('2024-01-01', '2025-01-01')
   AND is_current = true;
 
 -- ¿Qué datos tiene ABC disponibles?
 SELECT data_type, period_type,
-       MIN(period_key) as desde,
-       MAX(period_key) as hasta,
+       MIN(period_start) as desde,
+       MAX(period_end) as hasta,
        COUNT(*) as periodos
 FROM cs_provider_data
 WHERE company_id = 'abc-uuid' AND is_current = true
@@ -294,9 +294,9 @@ HAVING MAX(extracted_at) < now() - interval '30 days';
 
 ```
 1. Cliente configura conexión con su ERP (CONTPAQi, Aspel, SAP, etc.)
-2. ERP envía webhook o se hace polling periódico
+   { provider: 'erp', data_type: 'erp_invoices', period_start: '2026-04-01', period_end: '2026-04-30' }
 3. Facturas del ERP se guardan como:
-   { provider: 'erp', data_type: 'erp_invoices', period_key: '2026-04' }
+   { provider: 'erp', data_type: 'erp_invoices', period_start: '2026-04' }
 4. Se cruzan con datos del SAT:
    erp_invoices de abril vs invoices_issued de abril
 5. Si hay discrepancia → alerta

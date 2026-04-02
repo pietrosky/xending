@@ -65,29 +65,35 @@ Generación de contratos para cada operación de crédito. Una línea puede tene
 
 ## Tablas
 
-```
-cs_document_templates
-  id uuid pk
-  tenant_id text
-  template_type text        -- 'credit_line', 'operation', 'intraday', 'renewal'
-  template_name text
-  template_content text     -- HTML/Markdown template con variables
-  version text
-  is_active boolean
-  created_at timestamptz
+```sql
+CREATE TABLE cs_document_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id TEXT NOT NULL DEFAULT 'xending',
+  template_type TEXT NOT NULL
+    CHECK (template_type IN ('credit_line', 'operation', 'intraday', 'renewal')),
+  template_name TEXT NOT NULL,
+  template_content TEXT NOT NULL,  -- HTML/Markdown template con variables
+  version TEXT NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
-cs_generated_documents
-  id uuid pk
-  tenant_id text
-  entity_type text          -- 'credit_line', 'operation'
-  entity_id uuid
-  template_id uuid fk → cs_document_templates
-  document_type text        -- 'contract', 'promissory_note', 'approval_letter'
-  document_data jsonb       -- datos usados para generar
-  file_url text             -- URL del PDF generado
-  docusign_envelope_id text -- null si intradía
-  signature_status text     -- 'pending', 'signed', 'declined', 'not_required'
-  signed_at timestamptz
-  generated_at timestamptz
-  created_at timestamptz
+CREATE TABLE cs_generated_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id TEXT NOT NULL DEFAULT 'xending',
+  entity_type TEXT NOT NULL
+    CHECK (entity_type IN ('credit_line', 'operation')),
+  entity_id UUID NOT NULL,
+  template_id UUID REFERENCES cs_document_templates(id),
+  document_type TEXT NOT NULL
+    CHECK (document_type IN ('contract', 'promissory_note', 'approval_letter')),
+  document_data JSONB DEFAULT '{}',       -- datos usados para generar
+  file_url TEXT,                           -- URL del PDF generado
+  docusign_envelope_id TEXT,               -- null si intradía
+  signature_status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (signature_status IN ('pending', 'signed', 'declined', 'not_required')),
+  signed_at TIMESTAMPTZ,
+  generated_at TIMESTAMPTZ DEFAULT now(),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 ```

@@ -54,7 +54,8 @@ cs_provider_data (datos granulares por empresa + tipo + periodo)
   extraction_id uuid fk → cs_data_extractions
   provider text
   data_type text (invoices_issued, tax_return_annual, buro_report, etc.)
-  period_key text ('2024-01' mensual, '2024' anual, '2026-03-15' puntual)
+  period_start date ('2024-01' mensual, '2024' anual, '2026-03-15' puntual)
+  period_end date
   period_type text (monthly, quarterly, annual, point_in_time)
   data_payload jsonb
   record_count int

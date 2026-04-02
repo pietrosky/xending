@@ -43,20 +43,20 @@ GET  /api/companies/{rfc}/health/history
 ### Expedientes (M02)
 
 ```
-POST /api/expedientes
+POST /api/archive
   → Crear expediente desde onboarding
   → Body: { rfc, company_name, business_activity, 
             declared_monthly_sales_mxn, requested_line_usd, contact_email }
   → Response: { expediente_id, folio, pre_filter_result, next_step }
 
-GET  /api/expedientes/{id}
+GET  /api/archive/{id}
   → Estado completo del expediente (stage, scores, eventos)
 
-POST /api/expedientes/{id}/advance
+POST /api/archive/{id}/advance
   → Avanzar etapa (con validaciones de state machine)
   → Body: { target_stage, actor, data }
 
-GET  /api/expedientes/{id}/timeline
+GET  /api/archive/{id}/timeline
   → Historial de eventos del expediente
 ```
 

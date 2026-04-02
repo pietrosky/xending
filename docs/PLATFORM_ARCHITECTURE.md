@@ -249,38 +249,41 @@ Estados adicionales:
 
 ## Diagrama de conexión entre módulos
 
-```
-M01 Onboarding ──submit──→ M02 Expediente
-                                │
-                                ├── buro_authorization ──→ M03b Buró
-                                ├── sat_linkage ──→ M03a SAT
-                                ├── analysis ──→ M03 Scoring (16 engines)
-                                │
-                                ├── documentation_and_kyb ──→ M03c Financieros
-                                │                            M06 KYB (Scory)
-                                │                            M07 Listas Negras
-                                │                            M03 re-scoring
-                                │
-                                ├── committee ──→ M17 Comité/Facultades
-                                │
-                                ├── approved ──→ M05 Contratos (DocuSign)
-                                │                M12 Gestor Cartera (línea activa)
-                                │                M08 PLD (monitoreo programado)
-                                │                I05 Scheduler (vencimientos)
-                                │
-                                └── any_stage ──→ M14 Agente (consultas)
+```mermaid
+flowchart TD
+    M01["M01 Onboarding"] -->|submit| M02["M02 Expediente"]
 
-M12 Gestor Cartera ──operación pactada──→ M05 Contratos
-                    ──vencimiento──→ I05 Scheduler → emails
-                    ──pago──→ M16 Banking (conciliación)
-                    ──renovación anual──→ M03 re-scoring → M17 Comité
+    M02 -->|buro_authorization| M03b["M03b Buró"]
+    M02 -->|sat_linkage| M03a["M03a SAT"]
+    M02 -->|analysis| M03["M03 Scoring (16 engines)"]
 
-M10 Portal Empresa ←──datos SAT──→ I01 Data Layer ←──→ M11 Cobranza
-         │
-         └── CTA "Solicita crédito" ──→ M01 Onboarding
+    M02 -->|documentation_and_kyb| M03c["M03c Financieros"]
+    M02 -->|documentation_and_kyb| M06["M06 KYB (Scory)"]
+    M02 -->|documentation_and_kyb| M07["M07 Listas Negras"]
+    M02 -->|documentation_and_kyb| M03r1["M03 re-scoring"]
 
-M08 PLD ──alerta──→ M09 Compliance Officer
-                    M12 Gestor Cartera
+    M02 -->|committee| M17["M17 Comité/Facultades"]
+
+    M02 -->|approved| M05["M05 Contratos (DocuSign)"]
+    M02 -->|approved| M12["M12 Gestor Cartera"]
+    M02 -->|approved| M08["M08 PLD"]
+    M02 -->|approved| I05["I05 Scheduler"]
+
+    M02 -->|any_stage| M14["M14 Agente (consultas)"]
+
+    M12 -->|operación pactada| M05
+    M12 -->|vencimiento| I05
+    I05 -->|notifica| EMAILS["Emails"]
+    M12 -->|pago| M16["M16 Banking (conciliación)"]
+    M12 -->|renovación anual| M03r2["M03 re-scoring"]
+    M03r2 --> M17
+
+    M10["M10 Portal Empresa"] <-->|datos SAT| I01["I01 Data Layer"]
+    I01 <--> M11["M11 Cobranza"]
+    M10 -->|CTA 'Solicita crédito'| M01
+
+    M08 -->|alerta| M09["M09 Compliance Officer"]
+    M08 -->|alerta| M12
 ```
 
 ---

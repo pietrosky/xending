@@ -131,7 +131,10 @@ Usuario llega a /onboarding (landing pública)
 
 ---
 
-## Reglas del pre-filtro (onboarding simplificado)
+## Reglas del pre-filtro (onboarding simplificado):
+configuracion "pre_filter_thresholds" formato ejemplo:
+array[{ "credit": 100_000, "sales": 8_000_000 }]
+
 
 | Línea solicitada | Ventas mensuales mínimas (MXN) |
 |-----------------|-------------------------------|

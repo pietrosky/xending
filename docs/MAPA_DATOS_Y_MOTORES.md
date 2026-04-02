@@ -8,30 +8,47 @@ Este mapa muestra de dónde viene cada dato, cómo fluye por el sistema, qué mo
 
 ## 1. Fuentes de Datos (Data Sources)
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    FUENTES DE DATOS CRUDOS                          │
-│                                                                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐  │
-│  │  M03a — SAT  │  │ M03b — Buró  │  │ M03c — Financieros      │  │
-│  │  (Syntage)   │  │  (Syntage)   │  │  (Upload PDF/Excel)     │  │
-│  │              │  │              │  │                          │  │
-│  │ • Facturas   │  │ • Score PyME │  │ • Balance General       │  │
-│  │ • Declarac.  │  │ • Créditos   │  │ • Estado de Resultados  │  │
-│  │ • Constancia │  │ • Consultas  │  │ • Razones Financieras   │  │
-│  │ • Nómina     │  │ • Hawk       │  │ • Relación Patrimonial  │  │
-│  │ • Balanza    │  │              │  │                          │  │
-│  └──────┬───────┘  └──────┬───────┘  └────────────┬─────────────┘  │
-│         │                 │                        │                │
-│  ┌──────┴──────┐  ┌──────┴──────────────┐  ┌──────┴──────────┐    │
-│  │ M03d — PLD  │  │ M03e — Reg. Público │  │ M06 — KYB       │    │
-│  │  (Scory)    │  │  (Syntage)          │  │  (Scory)        │    │
-│  │             │  │                     │  │                  │    │
-│  │ • Listas    │  │ • Accionistas       │  │ • Verificación   │    │
-│  │ • OFAC/PEPs │  │ • RUG (garantías)   │  │   identidad     │    │
-│  │ • 69-B      │  │ • Incidencias       │  │   empresarial   │    │
-│  └─────────────┘  └─────────────────────┘  └────────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph FUENTES["FUENTES DE DATOS CRUDOS"]
+        subgraph SAT["M03a — SAT (Syntage)"]
+            SAT1["Facturas"]
+            SAT2["Declaraciones"]
+            SAT3["Constancia"]
+            SAT4["Nómina"]
+            SAT5["Balanza"]
+        end
+
+        subgraph BURO["M03b — Buró (Syntage)"]
+            BURO1["Score PyME"]
+            BURO2["Créditos"]
+            BURO3["Consultas"]
+            BURO4["Hawk"]
+        end
+
+        subgraph FIN["M03c — Financieros (Upload PDF/Excel)"]
+            FIN1["Balance General"]
+            FIN2["Estado de Resultados"]
+            FIN3["Razones Financieras"]
+            FIN4["Relación Patrimonial"]
+        end
+
+        subgraph PLD["M03d — PLD (Scory)"]
+            PLD1["Listas"]
+            PLD2["OFAC/PEPs"]
+            PLD3["69-B"]
+        end
+
+        subgraph REG["M03e — Reg. Público (Syntage)"]
+            REG1["Accionistas"]
+            REG2["RUG (garantías)"]
+            REG3["Incidencias"]
+        end
+
+        subgraph KYB["M06 — KYB (Scory)"]
+            KYB1["Verificación identidad empresarial"]
+        end
+    end
 ```
 
 ### Dónde se guardan los datos crudos
@@ -60,44 +77,47 @@ Todos los datos crudos van a la tabla `cs_provider_data` del Data Layer (I01):
 
 Cada motor lee datos crudos, calcula métricas, y produce un score de 0 a 100.
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     MOTORES DE ANÁLISIS                             │
-│                                                                     │
-│  DATOS SAT ──────────────────────────────────────────────────────  │
-│  │                                                                  │
-│  ├─→ Facturación SAT (14%)     Ventas, cancelaciones, DSO, DPO    │
-│  ├─→ Red de Clientes (8%)      Concentración, HHI, dependencia    │
-│  ├─→ Estabilidad (9%)          Volatilidad, estacionalidad        │
-│  ├─→ Empleados (3%)            Headcount, productividad           │
-│  └─→ Riesgo Cambiario (7%)    Descalce USD/MXN, hedge natural    │
-│                                                                     │
-│  DATOS BURÓ ─────────────────────────────────────────────────────  │
-│  │                                                                  │
-│  └─→ Buró de Crédito (10%)    Score, créditos, rotación deuda    │
-│                                                                     │
-│  DATOS FINANCIEROS (SAT + Manual) ───────────────────────────────  │
-│  │                                                                  │
-│  ├─→ Financiero (11%)          Balance, P&L, razones financieras  │
-│  ├─→ Flujo de Efectivo (16%)   EBITDA, DSCR, capacidad de pago   │
-│  └─→ Capital de Trabajo (4%)   CCC, días de cobro/pago, aging    │
-│                                                                     │
-│  DATOS COMPLIANCE ───────────────────────────────────────────────  │
-│  │                                                                  │
-│  └─→ Cumplimiento (GATE)       PLD, listas negras — pasa o no    │
-│                                                                     │
-│  DATOS REGISTRO PÚBLICO ─────────────────────────────────────────  │
-│  │                                                                  │
-│  └─→ Riesgo Operativo (9%)    Accionistas, RUG, legales          │
-│                                                                     │
-│  DATOS INTERNOS ─────────────────────────────────────────────────  │
-│  │                                                                  │
-│  ├─→ Documentación (4%)        Completitud de expediente          │
-│  ├─→ Portafolio (5%)           Impacto en cartera Xending        │
-│  ├─→ Garantías (GATE)          Cobertura 2:1, haircuts           │
-│  ├─→ Fraude en Red (GATE)      Facturación circular, fachadas    │
-│  └─→ Benchmark (referencia)    Comparación vs industria          │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    subgraph SAT["DATOS SAT"]
+        SAT_SRC["M03a — SAT"]
+    end
+    SAT_SRC --> FACT["Facturación SAT (14%)<br/>Ventas, cancelaciones, DSO, DPO"]
+    SAT_SRC --> RED["Red de Clientes (8%)<br/>Concentración, HHI, dependencia"]
+    SAT_SRC --> EST["Estabilidad (9%)<br/>Volatilidad, estacionalidad"]
+    SAT_SRC --> EMP["Empleados (3%)<br/>Headcount, productividad"]
+    SAT_SRC --> FX["Riesgo Cambiario (7%)<br/>Descalce USD/MXN, hedge natural"]
+
+    subgraph BURO["DATOS BURÓ"]
+        BURO_SRC["M03b — Buró"]
+    end
+    BURO_SRC --> BUR["Buró de Crédito (10%)<br/>Score, créditos, rotación deuda"]
+
+    subgraph FIN["DATOS FINANCIEROS (SAT + Manual)"]
+        FIN_SRC["M03c — Financieros"]
+    end
+    FIN_SRC --> FINA["Financiero (11%)<br/>Balance, P&L, razones financieras"]
+    FIN_SRC --> CASH["Flujo de Efectivo (16%)<br/>EBITDA, DSCR, capacidad de pago"]
+    FIN_SRC --> WK["Capital de Trabajo (4%)<br/>CCC, días de cobro/pago, aging"]
+
+    subgraph COMP["DATOS COMPLIANCE"]
+        COMP_SRC["M03d — PLD"]
+    end
+    COMP_SRC --> CUMPL["Cumplimiento (GATE)<br/>PLD, listas negras — pasa o no"]
+
+    subgraph REGP["DATOS REGISTRO PÚBLICO"]
+        REG_SRC["M03e — Reg. Público"]
+    end
+    REG_SRC --> RIESGO["Riesgo Operativo (9%)<br/>Accionistas, RUG, legales"]
+
+    subgraph INT["DATOS INTERNOS"]
+        INT_SRC["Xending"]
+    end
+    INT_SRC --> DOC["Documentación (4%)<br/>Completitud de expediente"]
+    INT_SRC --> PORT["Portafolio (5%)<br/>Impacto en cartera Xending"]
+    INT_SRC --> GAR["Garantías (GATE)<br/>Cobertura 2:1, haircuts"]
+    INT_SRC --> FRAUD["Fraude en Red (GATE)<br/>Facturación circular, fachadas"]
+    INT_SRC --> BENCH["Benchmark (referencia)<br/>Comparación vs industria"]
 ```
 
 ---
