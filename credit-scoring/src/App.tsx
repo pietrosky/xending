@@ -10,6 +10,8 @@ import { PortfolioPage } from './features/credit-scoring/pages/PortfolioPage';
 import { PoliciesPage } from './features/credit-scoring/pages/PoliciesPage';
 import { BenchmarksPage } from './features/credit-scoring/pages/BenchmarksPage';
 import { MethodologyPage } from './features/credit-scoring/pages/MethodologyPage';
+import { DataMapPage } from './features/credit-scoring/pages/DataMapPage';
+import { FichasTecnicasPage } from './features/credit-scoring/pages/FichasTecnicasPage';
 
 export function App() {
   return (
@@ -27,6 +29,8 @@ export function App() {
         <Route path="policies" element={<PoliciesPage />} />
         <Route path="benchmarks" element={<BenchmarksPage />} />
         <Route path="methodology" element={<MethodologyPage />} />
+        <Route path="mapa-datos" element={<DataMapPage />} />
+        <Route path="fichas-tecnicas" element={<FichasTecnicasPage />} />
         {/* Catch old routes */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
