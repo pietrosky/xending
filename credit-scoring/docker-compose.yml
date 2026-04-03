@@ -1,0 +1,112 @@
+# Supabase Local — Xending Capital
+# Levanta: PostgreSQL + PostgREST (API REST) + Kong (API Gateway)
+#
+# Uso:
+#   docker compose up -d
+#   Las migraciones se aplican automáticamente al iniciar.
+#
+# URLs:
+#   PostgreSQL:  postgresql://postgres:postgres@localhost:54322/postgres
+#   PostgREST:   http://localhost:54321
+#   API (Kong):  http://localhost:54300
+#   Studio:      http://localhost:54323
+
+services:
+  # ─── PostgreSQL ───────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: xending-db
+    ports:
+      - "54322:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - xending-db-data:/var/lib/postgresql/data
+      - ./supabase/docker/init.sql:/docker-entrypoint-initdb.d/00-init.sql
+      - ./supabase/docker/run-migrations.sh:/docker-entrypoint-initdb.d/01-run-migrations.sh
+      - ./supabase/migrations:/migrations
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ─── PostgREST (API REST sobre PostgreSQL) ────────────────────────
+  rest:
+    image: postgrest/postgrest:v12.2.3
+    container_name: xending-rest
+    ports:
+      - "54321:3000"
+    environment:
+      PGRST_DB_URI: postgresql://authenticator:postgres@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Kong (API Gateway — emula supabase-js endpoint) ──────────────
+  kong:
+    image: kong:3.8
+    container_name: xending-kong
+    ports:
+      - "54300:8000"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+    volumes:
+      - ./supabase/docker/kong.yml:/etc/kong/kong.yml:ro
+    depends_on:
+      rest:
+        condition: service_started
+    restart: unless-stopped
+
+  # ─── PG Meta (para Studio) ────────────────────────────────────────
+  meta:
+    image: supabase/postgres-meta:v0.84.2
+    container_name: xending-meta
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: postgres
+      PG_META_DB_PASSWORD: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Supabase Studio (UI) ─────────────────────────────────────────
+  studio:
+    image: supabase/studio:latest
+    container_name: xending-studio
+    ports:
+      - "54323:3000"
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: postgres
+      DEFAULT_ORGANIZATION_NAME: Xending Capital
+      DEFAULT_PROJECT_NAME: Xending Credit
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: http://localhost:54300
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      NEXT_PUBLIC_ENABLE_LOGS: "false"
+      NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
+    depends_on:
+      meta:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  xending-db-data:

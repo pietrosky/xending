@@ -9,12 +9,14 @@ import {
   BookOpen,
   Map,
   ClipboardList,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import logoSrc from '@/assets/logoxending.png';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Scory Credit', icon: LayoutDashboard, end: true },
+  { to: '/companies', label: 'Empresas', icon: Building2, end: false },
   { to: '/portfolio', label: 'Portafolio', icon: TrendingUp, end: false },
   { to: '/policies', label: 'Politicas', icon: Shield, end: false },
   { to: '/benchmarks', label: 'Benchmarks', icon: BarChart3, end: false },

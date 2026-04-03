@@ -12,6 +12,7 @@ import { BenchmarksPage } from './features/credit-scoring/pages/BenchmarksPage';
 import { MethodologyPage } from './features/credit-scoring/pages/MethodologyPage';
 import { DataMapPage } from './features/credit-scoring/pages/DataMapPage';
 import { FichasTecnicasPage } from './features/credit-scoring/pages/FichasTecnicasPage';
+import { CompaniesPage } from './features/onboarding/pages/CompaniesPage';
 
 export function App() {
   return (
@@ -19,6 +20,7 @@ export function App() {
       <Route path="/" element={<CreditScoringLayout />}>
         {/* Dashboard is the main page */}
         <Route index element={<ApplicationDetailPage />} />
+        <Route path="companies" element={<CompaniesPage />} />
         <Route path="applications" element={<ApplicationsPage />} />
         <Route path="applications/new" element={<NewApplicationPage />} />
         <Route path="applications/:id" element={<ApplicationDetailPage />} />

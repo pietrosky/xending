@@ -8,10 +8,23 @@
  * los campos, mostrando feedback inmediato de GO/NO-GO.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { Currency } from '../types/application.types';
 import type { PreFilterInput, CreditPurpose } from '../types/expediente.types';
 import { runPreFilter, CREDIT_PURPOSE_OPTIONS } from '../engines/preFilter';
+
+// ─── Currency mask helpers ───────────────────────────────────────────
+
+/** Strip everything except digits and return the raw number. */
+function parseCurrencyRaw(display: string): number {
+  return Number(display.replace(/[^0-9]/g, '')) || 0;
+}
+
+/** Format a number as $1,234,567 */
+function formatCurrencyMask(value: number): string {
+  if (!value) return '';
+  return '$' + value.toLocaleString('en-US');
+}
 
 // ─── Props ───────────────────────────────────────────────────────────
 
@@ -56,10 +69,18 @@ function validateFields(data: Partial<PreFilterInput>): FieldErrors {
 export function NewApplicationForm({ onSubmit, isLoading = false }: NewApplicationFormProps) {
   const [rfc, setRfc] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [amount, setAmount] = useState('');
+  const [amountDisplay, setAmountDisplay] = useState('');
   const [currency, setCurrency] = useState<Currency>('USD');
   const [purpose, setPurpose] = useState<CreditPurpose | ''>('');
-  const [revenue, setRevenue] = useState('');
+  const [revenueDisplay, setRevenueDisplay] = useState('');
+
+  const handleCurrencyInput = useCallback(
+    (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = parseCurrencyRaw(e.target.value);
+      setter(raw ? formatCurrencyMask(raw) : '');
+    },
+    [],
+  );
   const [businessAge, setBusinessAge] = useState('');
   const [termDays, setTermDays] = useState('');
   const [email, setEmail] = useState('');
@@ -71,16 +92,16 @@ export function NewApplicationForm({ onSubmit, isLoading = false }: NewApplicati
   const currentInput: Partial<PreFilterInput> = useMemo(() => ({
     rfc: rfc.trim().toUpperCase(),
     company_name: companyName.trim(),
-    requested_amount: Number(amount) || 0,
+    requested_amount: parseCurrencyRaw(amountDisplay),
     currency,
     credit_purpose: purpose || undefined,
-    declared_annual_revenue: Number(revenue) || 0,
+    declared_annual_revenue: parseCurrencyRaw(revenueDisplay),
     declared_business_age: Number(businessAge) || 0,
     term_days: Number(termDays) || 0,
     contact_email: email.trim(),
     contact_phone: phone.trim() || undefined,
     legal_representative: legalRep.trim() || undefined,
-  }), [rfc, companyName, amount, currency, purpose, revenue, businessAge, termDays, email, phone, legalRep]);
+  }), [rfc, companyName, amountDisplay, currency, purpose, revenueDisplay, businessAge, termDays, email, phone, legalRep]);
 
   // Validación de campos
   const fieldErrors = validateFields(currentInput);
@@ -178,14 +199,13 @@ export function NewApplicationForm({ onSubmit, isLoading = false }: NewApplicati
           <label htmlFor="naf-amount" className="block text-sm font-medium text-foreground mb-1">Monto solicitado</label>
           <input
             id="naf-amount"
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            type="text"
+            inputMode="numeric"
+            value={amountDisplay}
+            onChange={handleCurrencyInput(setAmountDisplay)}
             onBlur={() => handleBlur('requested_amount')}
             className={fieldCls('requested_amount')}
-            placeholder="100000"
-            min="1"
-            step="any"
+            placeholder="$100,000"
             aria-invalid={touched.requested_amount && !!fieldErrors.requested_amount}
           />
           {touched.requested_amount && fieldErrors.requested_amount && (
@@ -235,14 +255,13 @@ export function NewApplicationForm({ onSubmit, isLoading = false }: NewApplicati
           </label>
           <input
             id="naf-revenue"
-            type="number"
-            value={revenue}
-            onChange={(e) => setRevenue(e.target.value)}
+            type="text"
+            inputMode="numeric"
+            value={revenueDisplay}
+            onChange={handleCurrencyInput(setRevenueDisplay)}
             onBlur={() => handleBlur('declared_annual_revenue')}
             className={fieldCls('declared_annual_revenue')}
-            placeholder="1000000"
-            min="1"
-            step="any"
+            placeholder="$1,000,000"
             aria-invalid={touched.declared_annual_revenue && !!fieldErrors.declared_annual_revenue}
           />
           {touched.declared_annual_revenue && fieldErrors.declared_annual_revenue && (
