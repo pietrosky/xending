@@ -11,7 +11,7 @@
  */
 
 import { useNavigate } from 'react-router-dom';
-import { useTransactions } from '../hooks/useTransactions';
+import { useTransactions, useCancelTransaction } from '../hooks/useTransactions';
 import { useRole } from '../hooks/useRole';
 import { TransactionCatalogTable } from '../components/TransactionCatalogTable';
 import { getCompanyFXById } from '../services/companyServiceFX';
@@ -21,6 +21,7 @@ export function TransactionCatalogPage() {
   const navigate = useNavigate();
   const { isAdmin } = useRole();
   const { data: transactions, isLoading, isError, refetch } = useTransactions();
+  const cancelMutation = useCancelTransaction();
 
   async function handleGeneratePDF(transactionId: string) {
     const tx = transactions?.find((t) => t.id === transactionId);
@@ -82,6 +83,11 @@ export function TransactionCatalogPage() {
         onGeneratePDF={handleGeneratePDF}
         onUploadComplete={() => void refetch()}
         onEdit={(txId) => navigate(`/fx/transactions/${txId}/edit`)}
+        onCancel={(txId) => {
+          if (confirm('¿Estás seguro de cancelar esta transacción?')) {
+            cancelMutation.mutate(txId, { onSuccess: () => void refetch() });
+          }
+        }}
       />
     </div>
   );

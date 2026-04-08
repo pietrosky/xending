@@ -13,6 +13,9 @@ export interface FXTransaction {
   authorized_by: string | null;
   authorized_at: string | null;
   proof_url: string | null;
+  cancelled: boolean;
+  cancelled_at: string | null;
+  cancelled_by: string | null;
   created_at: string;
   updated_at: string;
 }

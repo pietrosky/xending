@@ -35,13 +35,25 @@ export interface TransactionGroups {
  * Req 9.1
  */
 export async function getTransactions(): Promise<FXTransactionSummary[]> {
-  // 1. Fetch all transactions (table may not exist yet in local dev)
-  const { data: transactions, error: txError } = await supabase
+  // Get current user for role-based filtering
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = user?.app_metadata?.role || user?.user_metadata?.role || 'broker';
+  const userId = user?.id;
+
+  // 1. Fetch transactions (broker only sees their own)
+  let txQuery = supabase
     .from('fx_transactions')
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (txError || !transactions || transactions.length === 0) return [];
+  if (role === 'broker' && userId) {
+    txQuery = txQuery.eq('created_by', userId);
+  }
+
+  const { data: rawTransactions, error: txError } = await txQuery;
+
+  if (txError || !rawTransactions || rawTransactions.length === 0) return [];
+  const transactions = rawTransactions as unknown as FXTransaction[];
 
   // 2. Collect unique company IDs and user IDs
   const companyIds = [...new Set(transactions.map((tx) => tx.company_id))];
@@ -55,7 +67,7 @@ export async function getTransactions(): Promise<FXTransactionSummary[]> {
 
   const companyMap = new Map<string, { legal_name: string; rfc: string }>();
   if (companies) {
-    for (const c of companies) {
+    for (const c of companies as unknown as Array<{ id: string; legal_name: string; rfc: string }>) {
       companyMap.set(c.id, { legal_name: c.legal_name, rfc: c.rfc });
     }
   }
@@ -76,7 +88,7 @@ export async function getTransactions(): Promise<FXTransactionSummary[]> {
       .in('id', userIds);
 
     if (!usersError && users) {
-      for (const u of users) {
+      for (const u of users as unknown as Array<{ id: string; full_name: string; email: string }>) {
         userMap.set(u.id, u.full_name || u.email || u.id);
       }
     }
@@ -120,7 +132,7 @@ export async function createTransaction(
     .single();
 
   if (error) throw new Error(`Error creating transaction: ${error.message}`);
-  return data as FXTransaction;
+  return data as unknown as FXTransaction;
 }
 
 /**
@@ -160,9 +172,9 @@ export async function authorizeTransaction(
     throw new Error(`Error fetching transaction: ${fetchError.message}`);
   }
 
-  if (current.status !== 'pending') {
+  if (current!.status !== 'pending') {
     throw new Error(
-      `No se puede autorizar: la transacción tiene status '${current.status}', se esperaba 'pending'`,
+      `No se puede autorizar: la transacción tiene status '${current!.status}', se esperaba 'pending'`,
     );
   }
 
@@ -180,7 +192,7 @@ export async function authorizeTransaction(
     .single();
 
   if (error) throw new Error(`Error authorizing transaction: ${error.message}`);
-  return data as FXTransaction;
+  return data as unknown as FXTransaction;
 }
 
 /**
@@ -197,7 +209,7 @@ export async function getTransactionById(id: string): Promise<FXTransaction | nu
     if (error.code === 'PGRST116') return null;
     throw new Error(`Error fetching transaction: ${error.message}`);
   }
-  return data as FXTransaction;
+  return data as unknown as FXTransaction;
 }
 
 /**
@@ -223,7 +235,7 @@ export async function updateTransaction(
       .single();
 
     if (fetchError) throw new Error(`Error fetching transaction: ${fetchError.message}`);
-    if (current.status !== 'pending') {
+    if (current!.status !== 'pending') {
       throw new Error('Solo se pueden editar transacciones pendientes. Contacte al administrador.');
     }
   }
@@ -236,7 +248,55 @@ export async function updateTransaction(
     .single();
 
   if (error) throw new Error(`Error updating transaction: ${error.message}`);
-  return data as FXTransaction;
+  return data as unknown as FXTransaction;
+}
+
+/**
+ * Cancela una transacción FX (soft delete).
+ * - Broker: solo puede cancelar transacciones pending que le pertenecen.
+ * - Admin: puede cancelar authorized y completed.
+ */
+export async function cancelTransaction(transactionId: string): Promise<FXTransaction> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error('Usuario no autenticado');
+
+  const role = user.app_metadata?.role || user.user_metadata?.role || 'broker';
+
+  // Fetch current transaction
+  const { data: current, error: fetchError } = await supabase
+    .from('fx_transactions')
+    .select('status, cancelled, created_by')
+    .eq('id', transactionId)
+    .single();
+
+  if (fetchError) throw new Error(`Error fetching transaction: ${fetchError.message}`);
+  if (current!.cancelled) throw new Error('La transacción ya está cancelada');
+
+  // Permission check
+  if (role === 'broker') {
+    if (current!.status !== 'pending') {
+      throw new Error('Solo puedes cancelar transacciones pendientes');
+    }
+    if (current!.created_by !== user.id) {
+      throw new Error('Solo puedes cancelar tus propias transacciones');
+    }
+  }
+  // Admin can cancel authorized and completed (and pending)
+
+  const { data, error } = await supabase
+    .from('fx_transactions')
+    .update({
+      cancelled: true,
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: user.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', transactionId)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Error cancelling transaction: ${error.message}`);
+  return data as unknown as FXTransaction;
 }
 
 // ─── Pure functions ──────────────────────────────────────────────────

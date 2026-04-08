@@ -25,6 +25,7 @@ export interface CompanyFormFXProps {
   initialData?: CompanyFX;
   isAdmin?: boolean;
   onSubmit: (input: CreateCompanyFXInput) => void;
+  onToggleStatus?: (companyId: string, disabled: boolean) => void;
   isLoading?: boolean;
   error?: string | null;
 }
@@ -98,6 +99,7 @@ export function CompanyFormFX({
   initialData,
   isAdmin = false,
   onSubmit,
+  onToggleStatus,
   isLoading = false,
   error,
 }: CompanyFormFXProps) {
@@ -566,6 +568,39 @@ export function CompanyFormFX({
           <p className="text-xs text-muted-foreground mt-1">
             Ingrese los identificadores de los usuarios que tendrán acceso a esta empresa.
           </p>
+        </div>
+      )}
+
+      {/* ─── Deshabilitar empresa (admin only, edit mode) ─────────── */}
+      {isAdmin && mode === 'edit' && initialData && (
+        <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Estado de la empresa</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {initialData.status === 'active'
+                ? 'La empresa está activa. Deshabilitar impedirá crear nuevas transacciones.'
+                : 'La empresa está deshabilitada. Habilitar permitirá operar nuevamente.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              initialData.status === 'active'
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {initialData.status === 'active' ? 'Activa' : 'Deshabilitada'}
+            </span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={initialData.status !== 'active'}
+                onChange={() => onToggleStatus?.(initialData.id, initialData.status === 'active')}
+                className="sr-only peer"
+                aria-label={initialData.status === 'active' ? 'Deshabilitar empresa' : 'Habilitar empresa'}
+              />
+              <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-red-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+            </label>
+          </div>
         </div>
       )}
 

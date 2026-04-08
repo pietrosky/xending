@@ -18,6 +18,7 @@ export interface TransactionCatalogTableProps {
   onGeneratePDF?: (transactionId: string) => void;
   onUploadComplete?: () => void;
   onEdit?: (transactionId: string) => void;
+  onCancel?: (transactionId: string) => void;
 }
 
 type SortKey = 'folio' | 'company_legal_name' | 'company_rfc' | 'broker_name' | 'buys_usd' | 'exchange_rate' | 'pays_mxn' | 'created_at';
@@ -45,7 +46,7 @@ const HISTORIAL_PAGE_SIZE = 50;
 const filterCls = 'w-full px-2 py-1 mt-1 rounded border border-border bg-card text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary/40';
 
 export function TransactionCatalogTable({
-  transactions, isAdmin, onGeneratePDF, onUploadComplete, onEdit,
+  transactions, isAdmin, onGeneratePDF, onUploadComplete, onEdit, onCancel,
 }: TransactionCatalogTableProps) {
   const [historialOpen, setHistorialOpen] = useState(false);
   const [historialPage, setHistorialPage] = useState(0);
@@ -75,8 +76,8 @@ export function TransactionCatalogTable({
 
     if (sortKey) {
       result.sort((a, b) => {
-        const va = (a as Record<string, unknown>)[sortKey];
-        const vb = (b as Record<string, unknown>)[sortKey];
+        const va = (a as unknown as Record<string, unknown>)[sortKey];
+        const vb = (b as unknown as Record<string, unknown>)[sortKey];
         if (typeof va === 'number' && typeof vb === 'number') return sortDir === 'asc' ? va - vb : vb - va;
         const cmp = String(va ?? '').localeCompare(String(vb ?? ''), 'es', { sensitivity: 'base' });
         return sortDir === 'asc' ? cmp : -cmp;
@@ -146,9 +147,24 @@ export function TransactionCatalogTable({
   // ─── Row renderer ──────────────────────────────────────────────
 
   function renderRow(tx: FXTransactionSummary) {
+    const isCancelled = tx.cancelled;
+    const canCancel = !isCancelled && (
+      (isAdmin) ||
+      (!isAdmin && tx.status === 'pending')
+    );
+
     return (
-      <tr key={tx.id} className="bg-card text-foreground hover:bg-muted/20 transition-colors">
-        <td className="px-4 py-3 font-mono text-xs text-primary">{tx.folio}</td>
+      <tr key={tx.id} className={isCancelled
+        ? 'bg-red-50/50 text-muted-foreground line-through decoration-red-400/60'
+        : 'bg-card text-foreground hover:bg-muted/20 transition-colors'}>
+        <td className="px-4 py-3 font-mono text-xs">
+          <span className={isCancelled ? 'text-muted-foreground' : 'text-primary'}>{tx.folio}</span>
+          {isCancelled && (
+            <span className="ml-2 no-underline inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
+              Cancelada
+            </span>
+          )}
+        </td>
         <td className="px-4 py-3">{tx.company_legal_name}</td>
         <td className="px-4 py-3 font-mono text-xs">{tx.company_rfc}</td>
         {isAdmin && <td className="px-4 py-3">{tx.broker_name ?? '—'}</td>}
@@ -157,7 +173,7 @@ export function TransactionCatalogTable({
         <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.pays_mxn, 'MXN')}</td>
         <td className="px-4 py-3">{formatDate(tx.created_at)}</td>
         <td className="px-4 py-3 text-center">
-          {tx.folio ? (
+          {!isCancelled && tx.folio ? (
             <button type="button" onClick={() => onGeneratePDF?.(tx.id)}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -170,22 +186,43 @@ export function TransactionCatalogTable({
         <td className="px-4 py-3">{formatDate(tx.authorized_at)}</td>
         <td className="px-4 py-3">{tx.authorized_by_name ?? '—'}</td>
         <td className="px-4 py-3 text-center">
-          {tx.status === 'pending' && isAdmin ? (
+          {isCancelled ? (
+            <span className="text-muted-foreground text-xs no-underline">—</span>
+          ) : tx.status === 'pending' && isAdmin ? (
             <AuthorizeButton transactionId={tx.id} isAdmin={isAdmin} onAuthorized={() => onUploadComplete?.()} />
           ) : tx.status === 'authorized' ? (
             <ProofUpload transactionId={tx.id} isAuthorized existingProofUrl={tx.proof_url} onUploadComplete={() => onUploadComplete?.()} />
           ) : tx.status === 'completed' && tx.proof_url ? (
             <a href={tx.proof_url} target="_blank" rel="noopener noreferrer"
-              className="text-primary hover:text-primary/80 text-xs font-medium underline underline-offset-2 transition-colors">
+              className="text-primary hover:text-primary/80 text-xs font-medium underline underline-offset-2 transition-colors no-underline">
               Ver comprobante
             </a>
           ) : <span className="text-muted-foreground text-xs">—</span>}
         </td>
         {isAdmin && (
-          <td className="px-4 py-3 text-center">
-            <button type="button" onClick={() => onEdit?.(tx.id)}
-              className="text-primary hover:text-primary/80 text-xs font-medium underline underline-offset-2 transition-colors">
-              Editar
+          <td className="px-4 py-3 text-center no-underline">
+            <div className="flex items-center justify-center gap-2">
+              {!isCancelled && (
+                <button type="button" onClick={() => onEdit?.(tx.id)}
+                  className="text-primary hover:text-primary/80 text-xs font-medium underline underline-offset-2 transition-colors">
+                  Editar
+                </button>
+              )}
+              {canCancel && (
+                <button type="button" onClick={() => onCancel?.(tx.id)}
+                  className="text-red-600 hover:text-red-800 text-xs font-medium underline underline-offset-2 transition-colors">
+                  Cancelar
+                </button>
+              )}
+            </div>
+          </td>
+        )}
+        {/* Broker cancel button (non-admin, only in actions-less layout — add cancel in comprobante col) */}
+        {!isAdmin && canCancel && (
+          <td className="px-4 py-3 text-center no-underline">
+            <button type="button" onClick={() => onCancel?.(tx.id)}
+              className="text-red-600 hover:text-red-800 text-xs font-medium underline underline-offset-2 transition-colors">
+              Cancelar
             </button>
           </td>
         )}

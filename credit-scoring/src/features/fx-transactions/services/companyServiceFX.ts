@@ -26,17 +26,42 @@ function normalizeRfc(rfc: string): string {
  * Req 4.1, 4.2
  */
 export async function getCompaniesFX(): Promise<CompanyFX[]> {
+  // Get current user for role-based filtering
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = user?.app_metadata?.role || user?.user_metadata?.role || 'broker';
+  const userId = user?.id;
+
+  // For brokers, first get their company IDs from cs_companies_owners
+  let brokerCompanyIds: string[] | null = null;
+  if (role === 'broker' && userId) {
+    const { data: ownerships } = await supabase
+      .from('cs_companies_owners')
+      .select('company_id')
+      .eq('user_id', userId);
+
+    brokerCompanyIds = (ownerships as unknown as Array<{ company_id: string }>)?.map((o) => o.company_id) ?? [];
+    if (brokerCompanyIds.length === 0) return [];
+  }
+
   // Query companies
-  const { data: companies, error: companiesError } = await supabase
+  let companyQuery = supabase
     .from('cs_companies')
     .select('*')
     .eq('tenant_id', 'xending')
     .order('created_at', { ascending: false });
 
-  if (companiesError) throw new Error(`Error fetching companies: ${companiesError.message}`);
-  if (!companies || companies.length === 0) return [];
+  // Broker: only their companies
+  if (brokerCompanyIds) {
+    companyQuery = companyQuery.in('id', brokerCompanyIds);
+  }
 
-  const companyIds = companies.map((c) => c.id);
+  const { data: companies, error: companiesError } = await companyQuery;
+
+  if (companiesError) throw new Error(`Error fetching companies: ${companiesError.message}`);
+  if (!companies || (companies as unknown as unknown[]).length === 0) return [];
+
+  const companyList = companies as unknown as Array<Record<string, unknown>>;
+  const companyIds = companyList.map((c) => c.id as string);
 
   // Fetch owners (table may not exist yet in local dev)
   const ownerMap = new Map<string, string>();
@@ -45,9 +70,10 @@ export async function getCompaniesFX(): Promise<CompanyFX[]> {
     .select('company_id, user_id')
     .in('company_id', companyIds);
 
-  if (!ownersError && owners && owners.length > 0) {
+  const ownerList = (owners ?? []) as unknown as Array<{ company_id: string; user_id: string }>;
+  if (!ownersError && ownerList.length > 0) {
     // Resolve user IDs to names via local_users
-    const userIds = [...new Set(owners.map((o) => o.user_id).filter(Boolean))];
+    const userIds = [...new Set(ownerList.map((o) => o.user_id).filter(Boolean))];
     const userNameMap = new Map<string, string>();
 
     if (userIds.length > 0) {
@@ -57,13 +83,13 @@ export async function getCompaniesFX(): Promise<CompanyFX[]> {
         .in('id', userIds);
 
       if (users) {
-        for (const u of users) {
+        for (const u of users as unknown as Array<{ id: string; full_name: string; email: string }>) {
           userNameMap.set(u.id, u.full_name || u.email || u.id);
         }
       }
     }
 
-    for (const owner of owners) {
+    for (const owner of ownerList) {
       ownerMap.set(owner.company_id, userNameMap.get(owner.user_id) ?? owner.user_id ?? 'Sin asignar');
     }
   }
@@ -72,12 +98,13 @@ export async function getCompaniesFX(): Promise<CompanyFX[]> {
   const txMap = new Map<string, { total_buys_usd: number; last_transaction_at: string | null }>();
   const { data: txAggregates, error: txError } = await supabase
     .from('fx_transactions')
-    .select('company_id, buys_usd, created_at')
+    .select('company_id, buys_usd, created_at, cancelled')
     .in('company_id', companyIds)
+    .eq('cancelled', false)
     .order('created_at', { ascending: false });
 
   if (!txError && txAggregates) {
-    for (const tx of txAggregates) {
+    for (const tx of txAggregates as unknown as Array<{ company_id: string; buys_usd: number; created_at: string }>) {
       const existing = txMap.get(tx.company_id);
       if (existing) {
         existing.total_buys_usd += Number(tx.buys_usd);
@@ -91,11 +118,11 @@ export async function getCompaniesFX(): Promise<CompanyFX[]> {
   }
 
   // Merge all data
-  return companies.map((company) => ({
+  return companyList.map((company) => ({
     ...company,
-    owner_name: ownerMap.get(company.id) ?? 'Sin asignar',
-    total_buys_usd: txMap.get(company.id)?.total_buys_usd ?? 0,
-    last_transaction_at: txMap.get(company.id)?.last_transaction_at ?? null,
+    owner_name: ownerMap.get(company.id as string) ?? 'Sin asignar',
+    total_buys_usd: txMap.get(company.id as string)?.total_buys_usd ?? 0,
+    last_transaction_at: txMap.get(company.id as string)?.last_transaction_at ?? null,
   })) as CompanyFX[];
 }
 
@@ -136,10 +163,25 @@ export async function searchCompanies(query: string): Promise<CompanyFX[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
+  // Get current user for role-based filtering
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = user?.app_metadata?.role || user?.user_metadata?.role || 'broker';
+  const userId = user?.id;
+
+  // For brokers, restrict to their companies
+  let allowedIds: string[] | null = null;
+  if (role === 'broker' && userId) {
+    const { data: ownerships } = await supabase
+      .from('cs_companies_owners')
+      .select('company_id')
+      .eq('user_id', userId);
+    allowedIds = (ownerships as unknown as Array<{ company_id: string }>)?.map((o) => o.company_id) ?? [];
+    if (allowedIds.length === 0) return [];
+  }
+
   const normalizedQuery = trimmed.toUpperCase();
 
-  // Search by legal_name (ilike) or rfc (normalized match)
-  const { data, error } = await supabase
+  let searchQuery = supabase
     .from('cs_companies')
     .select('*')
     .eq('tenant_id', 'xending')
@@ -147,6 +189,12 @@ export async function searchCompanies(query: string): Promise<CompanyFX[]> {
     .or(`legal_name.ilike.%${trimmed}%,rfc.ilike.%${normalizedQuery}%`)
     .order('legal_name', { ascending: true })
     .limit(20);
+
+  if (allowedIds) {
+    searchQuery = searchQuery.in('id', allowedIds);
+  }
+
+  const { data, error } = await searchQuery;
 
   if (error) throw new Error(`Error searching companies: ${error.message}`);
   return (data ?? []) as CompanyFX[];

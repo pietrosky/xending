@@ -283,22 +283,31 @@ class PostgrestMutationBuilder<T = Record<string, unknown>> extends PostgrestQue
   }
 }
 
-// ─── Auth stub (local dev — no real auth) ────────────────────────────
+// ─── Auth stub (local dev — reads from authStore) ───────────────────
 
-const LOCAL_DEV_USER = {
-  id: '00000000-0000-0000-0000-000000000001',
-  email: 'admin@xending.local',
-  app_metadata: { role: 'admin' },
-  user_metadata: { role: 'admin', full_name: 'Admin Local' },
-  role: 'admin',
-};
+import { useAuthStore } from './authStore';
 
 const authStub = {
   async getUser() {
-    return { data: { user: LOCAL_DEV_USER }, error: null };
+    const user = useAuthStore.getState().user;
+    if (!user) return { data: { user: null }, error: { message: 'Not authenticated' } };
+    return {
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          app_metadata: { role: user.role },
+          user_metadata: { role: user.role, full_name: user.full_name },
+          role: user.role,
+        },
+      },
+      error: null,
+    };
   },
   async getSession() {
-    return { data: { session: { user: LOCAL_DEV_USER } }, error: null };
+    const user = useAuthStore.getState().user;
+    if (!user) return { data: { session: null }, error: null };
+    return { data: { session: { user: { id: user.id, email: user.email } } }, error: null };
   },
   onAuthStateChange(_callback: unknown) {
     return { data: { subscription: { unsubscribe: () => {} } } };

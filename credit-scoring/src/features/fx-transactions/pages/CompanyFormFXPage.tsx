@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useRole } from '../hooks/useRole';
-import { useCompanyFX, useCreateCompanyFX, useUpdateCompanyFX } from '../hooks/useCompaniesFX';
+import { useCompanyFX, useCreateCompanyFX, useUpdateCompanyFX, useToggleCompanyStatus } from '../hooks/useCompaniesFX';
 import { CompanyFormFX } from '../components/CompanyFormFX';
 import type { CreateCompanyFXInput } from '../types/company-fx.types';
 
@@ -33,6 +33,7 @@ export function CompanyFormFXPage() {
   // Mutations
   const createMutation = useCreateCompanyFX();
   const updateMutation = useUpdateCompanyFX();
+  const toggleMutation = useToggleCompanyStatus();
 
   // Current user ID (needed for creation to link broker → company)
   const [userId, setUserId] = useState<string | null>(null);
@@ -115,6 +116,11 @@ export function CompanyFormFXPage() {
         initialData={mode === 'edit' ? (company ?? undefined) : undefined}
         isAdmin={isAdmin}
         onSubmit={handleSubmit}
+        onToggleStatus={(companyId, disabled) => {
+          toggleMutation.mutate({ id: companyId, disabled }, {
+            onSuccess: () => navigate('/fx/companies'),
+          });
+        }}
         isLoading={isLoading}
         error={error}
       />
