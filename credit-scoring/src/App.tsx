@@ -13,6 +13,11 @@ import { MethodologyPage } from './features/credit-scoring/pages/MethodologyPage
 import { DataMapPage } from './features/credit-scoring/pages/DataMapPage';
 import { FichasTecnicasPage } from './features/credit-scoring/pages/FichasTecnicasPage';
 import { CompaniesPage } from './features/onboarding/pages/CompaniesPage';
+import { CompanyCatalogPage } from './features/fx-transactions/pages/CompanyCatalogPage';
+import { CompanyFormFXPage } from './features/fx-transactions/pages/CompanyFormFXPage';
+import { TransactionCatalogPage } from './features/fx-transactions/pages/TransactionCatalogPage';
+import { CreateTransactionPage } from './features/fx-transactions/pages/CreateTransactionPage';
+import { EditTransactionPage } from './features/fx-transactions/pages/EditTransactionPage';
 
 export function App() {
   return (
@@ -33,6 +38,13 @@ export function App() {
         <Route path="methodology" element={<MethodologyPage />} />
         <Route path="mapa-datos" element={<DataMapPage />} />
         <Route path="fichas-tecnicas" element={<FichasTecnicasPage />} />
+        {/* FX Transactions routes */}
+        <Route path="fx/companies" element={<CompanyCatalogPage />} />
+        <Route path="fx/companies/new" element={<CompanyFormFXPage />} />
+        <Route path="fx/companies/:id/edit" element={<CompanyFormFXPage />} />
+        <Route path="fx/transactions" element={<TransactionCatalogPage />} />
+        <Route path="fx/transactions/new" element={<CreateTransactionPage />} />
+        <Route path="fx/transactions/:id/edit" element={<EditTransactionPage />} />
         {/* Catch old routes */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

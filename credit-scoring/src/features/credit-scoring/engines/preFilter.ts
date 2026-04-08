@@ -34,8 +34,8 @@ function toUsd(amount: number, currency: string): number {
 
 // ─── Validación de RFC ───────────────────────────────────────────────
 
-const RFC_MORAL_REGEX = /^[A-Z&Ñ]{3}\d{6}[A-Z0-9]{3}$/i;
-const RFC_FISICA_REGEX = /^[A-Z&Ñ]{4}\d{6}[A-Z0-9]{3}$/i;
+const RFC_MORAL_REGEX = /^[A-Z]{3}[0-9]{6}[A-Z0-9]{3}$/;  // 12 chars - companies
+const RFC_FISICA_REGEX = /^[A-Z]{4}[0-9]{6}[A-Z0-9]{3}$/; // 13 chars - individuals
 
 function isValidRfc(rfc: string): boolean {
   const clean = rfc.trim().toUpperCase();

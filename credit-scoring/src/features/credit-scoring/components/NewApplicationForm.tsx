@@ -12,6 +12,7 @@ import { useState, useMemo, useCallback } from 'react';
 import type { Currency } from '../types/application.types';
 import type { PreFilterInput, CreditPurpose } from '../types/expediente.types';
 import { runPreFilter, CREDIT_PURPOSE_OPTIONS } from '../engines/preFilter';
+import { RFC_3_REGEX, RFC_4_REGEX, EMAIL_REGEX, maskRfc, maskPhone } from '../utils/inputMasks';
 
 // ─── Currency mask helpers ───────────────────────────────────────────
 
@@ -35,9 +36,6 @@ interface NewApplicationFormProps {
 
 // ─── Validación básica de campos ─────────────────────────────────────
 
-const RFC_REGEX = /^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$/i;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 interface FieldErrors {
   rfc?: string;
   company_name?: string;
@@ -52,7 +50,12 @@ interface FieldErrors {
 function validateFields(data: Partial<PreFilterInput>): FieldErrors {
   const errors: FieldErrors = {};
   if (!data.rfc?.trim()) errors.rfc = 'RFC es requerido';
-  else if (!RFC_REGEX.test(data.rfc.trim())) errors.rfc = 'RFC inválido (12-13 caracteres)';
+  else {
+    const upperRFC = data.rfc.trim().toUpperCase();
+    if (!RFC_3_REGEX.test(upperRFC) && !RFC_4_REGEX.test(upperRFC)) {
+      errors.rfc = 'Formato de RFC inválido. Debe ser: 3-4 letras + 6 números + 3 caracteres alfanuméricos';
+    }
+  }
   if (!data.company_name?.trim()) errors.company_name = 'Nombre de empresa es requerido';
   if (!data.requested_amount || data.requested_amount <= 0) errors.requested_amount = 'Monto debe ser mayor a 0';
   if (!data.credit_purpose) errors.credit_purpose = 'Selecciona un propósito';
@@ -99,7 +102,7 @@ export function NewApplicationForm({ onSubmit, isLoading = false }: NewApplicati
     declared_business_age: Number(businessAge) || 0,
     term_days: Number(termDays) || 0,
     contact_email: email.trim(),
-    contact_phone: phone.trim() || undefined,
+    contact_phone: phone.replace(/\s/g, '') || undefined,
     legal_representative: legalRep.trim() || undefined,
   }), [rfc, companyName, amountDisplay, currency, purpose, revenueDisplay, businessAge, termDays, email, phone, legalRep]);
 
@@ -161,7 +164,7 @@ export function NewApplicationForm({ onSubmit, isLoading = false }: NewApplicati
             id="naf-rfc"
             type="text"
             value={rfc}
-            onChange={(e) => setRfc(e.target.value)}
+            onChange={(e) => setRfc(maskRfc(e.target.value))}
             onBlur={() => handleBlur('rfc')}
             className={fieldCls('rfc')}
             placeholder="XAXX010101000"
@@ -339,7 +342,7 @@ export function NewApplicationForm({ onSubmit, isLoading = false }: NewApplicati
             id="naf-phone"
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(maskPhone(e.target.value))}
             className={inputClass}
             placeholder="55 1234 5678"
             autoComplete="tel"

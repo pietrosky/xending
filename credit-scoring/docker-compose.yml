@@ -1,15 +1,14 @@
 # Supabase Local — Xending Capital
-# Levanta: PostgreSQL + PostgREST (API REST) + Kong (API Gateway)
+# Levanta: PostgreSQL + PostgREST (API REST directa) + Studio
 #
 # Uso:
 #   docker compose up -d
 #   Las migraciones se aplican automáticamente al iniciar.
 #
 # URLs:
-#   PostgreSQL:  postgresql://postgres:postgres@localhost:54322/postgres
-#   PostgREST:   http://localhost:54321
-#   API (Kong):  http://localhost:54300
-#   Studio:      http://localhost:54323
+#   PostgreSQL:  postgresql://postgres:postgres@localhost:55432/postgres
+#   PostgREST:   http://localhost:55421
+#   Studio:      http://localhost:55423
 
 services:
   # ─── PostgreSQL ───────────────────────────────────────────────────
@@ -17,7 +16,7 @@ services:
     image: postgres:15-alpine
     container_name: xending-db
     ports:
-      - "54322:5432"
+      - "55432:5432"
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
@@ -38,7 +37,7 @@ services:
     image: postgrest/postgrest:v12.2.3
     container_name: xending-rest
     ports:
-      - "54321:3000"
+      - "55421:3000"
     environment:
       PGRST_DB_URI: postgresql://authenticator:postgres@db:5432/postgres
       PGRST_DB_SCHEMAS: public
@@ -48,26 +47,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    restart: unless-stopped
-
-  # ─── Kong (API Gateway — emula supabase-js endpoint) ──────────────
-  kong:
-    image: kong:3.8
-    container_name: xending-kong
-    ports:
-      - "54300:8000"
-    environment:
-      KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
-      KONG_DNS_ORDER: LAST,A,CNAME
-      KONG_PLUGINS: request-transformer,cors,key-auth,acl
-      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
-      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
-    volumes:
-      - ./supabase/docker/kong.yml:/etc/kong/kong.yml:ro
-    depends_on:
-      rest:
-        condition: service_started
     restart: unless-stopped
 
   # ─── PG Meta (para Studio) ────────────────────────────────────────
@@ -91,14 +70,14 @@ services:
     image: supabase/studio:latest
     container_name: xending-studio
     ports:
-      - "54323:3000"
+      - "55423:3000"
     environment:
       STUDIO_PG_META_URL: http://meta:8080
       POSTGRES_PASSWORD: postgres
       DEFAULT_ORGANIZATION_NAME: Xending Capital
       DEFAULT_PROJECT_NAME: Xending Credit
-      SUPABASE_URL: http://kong:8000
-      SUPABASE_PUBLIC_URL: http://localhost:54300
+      SUPABASE_URL: http://rest:3000
+      SUPABASE_PUBLIC_URL: http://localhost:55421
       SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
       SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
       NEXT_PUBLIC_ENABLE_LOGS: "false"

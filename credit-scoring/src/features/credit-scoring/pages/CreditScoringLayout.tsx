@@ -10,6 +10,8 @@ import {
   Map,
   ClipboardList,
   Building2,
+  ArrowLeftRight,
+  Landmark,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import logoSrc from '@/assets/logoxending.png';
@@ -24,6 +26,8 @@ const NAV_ITEMS = [
   { to: '/mapa-datos', label: 'Mapa de Datos', icon: Map, end: false },
   { to: '/fichas-tecnicas', label: 'Fichas Tecnicas', icon: ClipboardList, end: false },
   { to: '/applications', label: 'Solicitudes', icon: Settings, end: false },
+  { to: '/fx/companies', label: 'Empresas FX', icon: Landmark, end: false },
+  { to: '/fx/transactions', label: 'Transacciones FX', icon: ArrowLeftRight, end: false },
 ];
 
 export function CreditScoringLayout() {
