@@ -1,19 +1,8 @@
 /**
  * TransactionCatalogTable — Tabla del catálogo de transacciones FX.
  *
- * Tres secciones agrupadas por estado:
- * - "No Autorizadas" (pending) — siempre expandida
- * - "Autorizadas sin Comprobante" (authorized) — siempre expandida
- * - "Historial" (completed) — colapsable
- *
- * Columnas: Razón Social, RFC, Buys (USD), Tipo de Cambio, Pays (MXN),
- *           Fecha, Orden de Pago (PDF), Autorizada, Autorizó, Comprobante.
- * Columna Broker visible solo para admin.
- *
- * Integra AuthorizeButton en filas pendientes (admin only),
- * ProofUpload en filas autorizadas, y PaymentOrderPDF callback en cada fila.
- *
- * Requerimientos: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6
+ * Per-column filters + sort buttons. Three sections by status.
+ * Historial is collapsible + paginated (50 per page).
  */
 
 import { useState, useMemo } from 'react';
@@ -31,147 +20,171 @@ export interface TransactionCatalogTableProps {
   onEdit?: (transactionId: string) => void;
 }
 
+type SortKey = 'folio' | 'company_legal_name' | 'company_rfc' | 'broker_name' | 'buys_usd' | 'exchange_rate' | 'pays_mxn' | 'created_at';
+type SortDir = 'asc' | 'desc';
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('es-MX', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  return new Date(dateStr).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function SortButton({ active, dir, onToggle }: { active: boolean; dir: SortDir; onToggle: (d: SortDir) => void }) {
+  return (
+    <span className="inline-flex flex-col ml-1 -space-y-0.5">
+      <button type="button" onClick={() => onToggle('asc')}
+        className={`text-[10px] leading-none ${active && dir === 'asc' ? 'text-primary' : 'text-muted-foreground/40 hover:text-muted-foreground'}`}
+        aria-label="Orden ascendente">▲</button>
+      <button type="button" onClick={() => onToggle('desc')}
+        className={`text-[10px] leading-none ${active && dir === 'desc' ? 'text-primary' : 'text-muted-foreground/40 hover:text-muted-foreground'}`}
+        aria-label="Orden descendente">▼</button>
+    </span>
+  );
+}
+
+const HISTORIAL_PAGE_SIZE = 50;
+const filterCls = 'w-full px-2 py-1 mt-1 rounded border border-border bg-card text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary/40';
+
 export function TransactionCatalogTable({
-  transactions,
-  isAdmin,
-  onGeneratePDF,
-  onUploadComplete,
-  onEdit,
+  transactions, isAdmin, onGeneratePDF, onUploadComplete, onEdit,
 }: TransactionCatalogTableProps) {
   const [historialOpen, setHistorialOpen] = useState(false);
   const [historialPage, setHistorialPage] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
-  const HISTORIAL_PAGE_SIZE = 50;
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
 
-  // Filter transactions by folio, RFC, razón social, broker
+  function updateFilter(key: string, value: string) {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setHistorialPage(0);
+  }
+
+  function handleSort(key: SortKey, dir: SortDir) {
+    if (sortKey === key && sortDir === dir) { setSortKey(null); }
+    else { setSortKey(key); setSortDir(dir); }
+  }
+
+  // Filter + sort
   const filtered = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return transactions;
-    return transactions.filter((tx) =>
-      (tx.folio?.toLowerCase().includes(q)) ||
-      (tx.company_rfc?.toLowerCase().includes(q)) ||
-      (tx.company_legal_name?.toLowerCase().includes(q)) ||
-      (tx.broker_name?.toLowerCase().includes(q))
-    );
-  }, [transactions, searchQuery]);
+    let result = [...transactions];
+    const q = (k: string) => (filters[k] ?? '').trim().toLowerCase();
+
+    if (q('folio')) result = result.filter((t) => t.folio?.toLowerCase().includes(q('folio')));
+    if (q('company_legal_name')) result = result.filter((t) => t.company_legal_name?.toLowerCase().includes(q('company_legal_name')));
+    if (q('company_rfc')) result = result.filter((t) => t.company_rfc?.toLowerCase().includes(q('company_rfc')));
+    if (q('broker_name')) result = result.filter((t) => (t.broker_name ?? '').toLowerCase().includes(q('broker_name')));
+
+    if (sortKey) {
+      result.sort((a, b) => {
+        const va = (a as Record<string, unknown>)[sortKey];
+        const vb = (b as Record<string, unknown>)[sortKey];
+        if (typeof va === 'number' && typeof vb === 'number') return sortDir === 'asc' ? va - vb : vb - va;
+        const cmp = String(va ?? '').localeCompare(String(vb ?? ''), 'es', { sensitivity: 'base' });
+        return sortDir === 'asc' ? cmp : -cmp;
+      });
+    }
+    return result;
+  }, [transactions, filters, sortKey, sortDir]);
 
   const groups = groupTransactionsByStatus(filtered);
-
   const colCount = isAdmin ? 13 : 11;
 
+  // ─── Header with sort + filter row ─────────────────────────────
+
   function renderHeader() {
+    const th = (label: string, key: SortKey, extra = '') => (
+      <th className={`px-4 py-2 font-medium ${extra}`}>
+        {label}
+        <SortButton active={sortKey === key} dir={sortDir} onToggle={(d) => handleSort(key, d)} />
+      </th>
+    );
+    const textCols: Array<{ key: string; hasFilter: boolean }> = [
+      { key: 'folio', hasFilter: true },
+      { key: 'company_legal_name', hasFilter: true },
+      { key: 'company_rfc', hasFilter: true },
+    ];
+    if (isAdmin) textCols.push({ key: 'broker_name', hasFilter: true });
+
     return (
       <thead>
         <tr className="bg-muted/50 text-left text-muted-foreground">
-          <th className="px-4 py-3 font-medium">Folio</th>
-          <th className="px-4 py-3 font-medium">Razón Social</th>
-          <th className="px-4 py-3 font-medium">RFC</th>
-          {isAdmin && <th className="px-4 py-3 font-medium">Broker</th>}
-          <th className="px-4 py-3 font-medium text-right">Buys (USD)</th>
-          <th className="px-4 py-3 font-medium text-right">Tipo de Cambio</th>
-          <th className="px-4 py-3 font-medium text-right">Pays (MXN)</th>
-          <th className="px-4 py-3 font-medium">Fecha</th>
-          <th className="px-4 py-3 font-medium text-center">Orden de Pago</th>
-          <th className="px-4 py-3 font-medium">Autorizada</th>
-          <th className="px-4 py-3 font-medium">Autorizó</th>
-          <th className="px-4 py-3 font-medium text-center">Comprobante</th>
-          {isAdmin && <th className="px-4 py-3 font-medium text-center">Acciones</th>}
+          {th('Folio', 'folio')}
+          {th('Razón Social', 'company_legal_name')}
+          {th('RFC', 'company_rfc')}
+          {isAdmin && th('Broker', 'broker_name')}
+          {th('Buys (USD)', 'buys_usd', 'text-right')}
+          {th('Tipo de Cambio', 'exchange_rate', 'text-right')}
+          {th('Pays (MXN)', 'pays_mxn', 'text-right')}
+          {th('Fecha', 'created_at')}
+          <th className="px-4 py-2 font-medium text-center">Orden de Pago</th>
+          <th className="px-4 py-2 font-medium">Autorizada</th>
+          <th className="px-4 py-2 font-medium">Autorizó</th>
+          <th className="px-4 py-2 font-medium text-center">Comprobante</th>
+          {isAdmin && <th className="px-4 py-2 font-medium text-center">Acciones</th>}
+        </tr>
+        <tr className="bg-muted/20">
+          {textCols.map((col) => (
+            <th key={col.key} className="px-4 py-1">
+              <input type="text" placeholder="Filtrar..." value={filters[col.key] ?? ''}
+                onChange={(e) => updateFilter(col.key, e.target.value)} className={filterCls} />
+            </th>
+          ))}
+          {/* Empty cells for non-filterable columns */}
+          <th className="px-4 py-1" />{/* buys */}
+          <th className="px-4 py-1" />{/* rate */}
+          <th className="px-4 py-1" />{/* pays */}
+          <th className="px-4 py-1" />{/* fecha */}
+          <th className="px-4 py-1" />{/* orden */}
+          <th className="px-4 py-1" />{/* autorizada */}
+          <th className="px-4 py-1" />{/* autorizó */}
+          <th className="px-4 py-1" />{/* comprobante */}
+          {isAdmin && <th className="px-4 py-1" />}{/* acciones */}
         </tr>
       </thead>
     );
   }
 
+  // ─── Row renderer ──────────────────────────────────────────────
+
   function renderRow(tx: FXTransactionSummary) {
     return (
-      <tr
-        key={tx.id}
-        className="bg-card text-foreground hover:bg-muted/20 transition-colors"
-      >
+      <tr key={tx.id} className="bg-card text-foreground hover:bg-muted/20 transition-colors">
         <td className="px-4 py-3 font-mono text-xs text-primary">{tx.folio}</td>
         <td className="px-4 py-3">{tx.company_legal_name}</td>
         <td className="px-4 py-3 font-mono text-xs">{tx.company_rfc}</td>
         {isAdmin && <td className="px-4 py-3">{tx.broker_name ?? '—'}</td>}
-        <td className="px-4 py-3 text-right tabular-nums">
-          {formatCurrency(tx.buys_usd, 'USD')}
-        </td>
-        <td className="px-4 py-3 text-right tabular-nums">
-          {tx.exchange_rate.toFixed(4)}
-        </td>
-        <td className="px-4 py-3 text-right tabular-nums">
-          {formatCurrency(tx.pays_mxn, 'MXN')}
-        </td>
+        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.buys_usd, 'USD')}</td>
+        <td className="px-4 py-3 text-right tabular-nums">{tx.exchange_rate.toFixed(4)}</td>
+        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.pays_mxn, 'MXN')}</td>
         <td className="px-4 py-3">{formatDate(tx.created_at)}</td>
         <td className="px-4 py-3 text-center">
           {tx.folio ? (
-            <button
-              type="button"
-              onClick={() => onGeneratePDF?.(tx.id)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
+            <button type="button" onClick={() => onGeneratePDF?.(tx.id)}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
               PDF
             </button>
-          ) : (
-            <span className="text-muted-foreground text-xs">—</span>
-          )}
+          ) : <span className="text-muted-foreground text-xs">—</span>}
         </td>
         <td className="px-4 py-3">{formatDate(tx.authorized_at)}</td>
         <td className="px-4 py-3">{tx.authorized_by_name ?? '—'}</td>
         <td className="px-4 py-3 text-center">
           {tx.status === 'pending' && isAdmin ? (
-            <AuthorizeButton
-              transactionId={tx.id}
-              isAdmin={isAdmin}
-              onAuthorized={() => onUploadComplete?.()}
-            />
+            <AuthorizeButton transactionId={tx.id} isAdmin={isAdmin} onAuthorized={() => onUploadComplete?.()} />
           ) : tx.status === 'authorized' ? (
-            <ProofUpload
-              transactionId={tx.id}
-              isAuthorized
-              existingProofUrl={tx.proof_url}
-              onUploadComplete={() => onUploadComplete?.()}
-            />
+            <ProofUpload transactionId={tx.id} isAuthorized existingProofUrl={tx.proof_url} onUploadComplete={() => onUploadComplete?.()} />
           ) : tx.status === 'completed' && tx.proof_url ? (
-            <a
-              href={tx.proof_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:text-primary/80 text-xs font-medium underline underline-offset-2 transition-colors"
-            >
+            <a href={tx.proof_url} target="_blank" rel="noopener noreferrer"
+              className="text-primary hover:text-primary/80 text-xs font-medium underline underline-offset-2 transition-colors">
               Ver comprobante
             </a>
-          ) : (
-            <span className="text-muted-foreground text-xs">—</span>
-          )}
+          ) : <span className="text-muted-foreground text-xs">—</span>}
         </td>
         {isAdmin && (
           <td className="px-4 py-3 text-center">
-            <button
-              type="button"
-              onClick={() => onEdit?.(tx.id)}
-              className="text-primary hover:text-primary/80 text-xs font-medium underline underline-offset-2 transition-colors"
-            >
+            <button type="button" onClick={() => onEdit?.(tx.id)}
+              className="text-primary hover:text-primary/80 text-xs font-medium underline underline-offset-2 transition-colors">
               Editar
             </button>
           </td>
@@ -180,37 +193,23 @@ export function TransactionCatalogTable({
     );
   }
 
-  function renderSectionHeader(
-    title: string,
-    count: number,
-    collapsible: boolean,
-    isOpen?: boolean,
-    onToggle?: () => void,
-  ) {
+  // ─── Section header ────────────────────────────────────────────
+
+  function renderSectionHeader(title: string, count: number, collapsible: boolean, isOpen?: boolean, onToggle?: () => void) {
     return (
       <tr className="bg-muted/30">
         <td colSpan={colCount} className="px-4 py-2">
           {collapsible ? (
-            <button
-              type="button"
-              onClick={onToggle}
-              className="flex items-center gap-2 text-sm font-semibold text-foreground w-full text-left"
-            >
-              <svg
-                className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-90' : ''}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+            <button type="button" onClick={onToggle}
+              className="flex items-center gap-2 text-sm font-semibold text-foreground w-full text-left">
+              <svg className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              {title}
-              <span className="text-xs font-normal text-muted-foreground">({count})</span>
+              {title} <span className="text-xs font-normal text-muted-foreground">({count})</span>
             </button>
           ) : (
             <span className="text-sm font-semibold text-foreground">
-              {title}
-              <span className="ml-2 text-xs font-normal text-muted-foreground">({count})</span>
+              {title} <span className="ml-2 text-xs font-normal text-muted-foreground">({count})</span>
             </span>
           )}
         </td>
@@ -218,130 +217,62 @@ export function TransactionCatalogTable({
     );
   }
 
+  // ─── Render ────────────────────────────────────────────────────
+
   if (transactions.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground text-sm">
-        No hay transacciones registradas.
-      </div>
-    );
+    return <div className="text-center py-12 text-muted-foreground text-sm">No hay transacciones registradas.</div>;
   }
 
-  return (
-    <div className="space-y-3">
-      {/* Search filter */}
-      <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => { setSearchQuery(e.target.value); setHistorialPage(0); }}
-          placeholder="Buscar por Folio, RFC, Razón Social o Broker..."
-          className="w-full pl-10 pr-3 py-2 rounded-lg border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-sm"
-          >
-            ✕
-          </button>
-        )}
-      </div>
+  const noResults = filtered.length === 0 && Object.values(filters).some((v) => v.trim());
 
-      {filtered.length === 0 && searchQuery ? (
-        <div className="text-center py-12 text-muted-foreground text-sm">
-          No se encontraron transacciones para "{searchQuery}"
-        </div>
-      ) : (
-      <div className="overflow-x-auto rounded-lg border border-border">
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-sm">
         {renderHeader()}
         <tbody className="divide-y divide-border">
-          {/* No Autorizadas — always expanded */}
-          {renderSectionHeader('No Autorizadas', groups.noAutorizadas.length, false)}
-          {groups.noAutorizadas.length > 0
-            ? groups.noAutorizadas.map(renderRow)
-            : (
-                <tr>
-                  <td colSpan={colCount} className="px-4 py-4 text-center text-muted-foreground text-xs">
-                    Sin transacciones pendientes
-                  </td>
-                </tr>
+          {noResults ? (
+            <tr><td colSpan={colCount} className="px-4 py-8 text-center text-muted-foreground text-xs">No se encontraron transacciones con los filtros aplicados.</td></tr>
+          ) : (
+            <>
+              {renderSectionHeader('No Autorizadas', groups.noAutorizadas.length, false)}
+              {groups.noAutorizadas.length > 0 ? groups.noAutorizadas.map(renderRow) : (
+                <tr><td colSpan={colCount} className="px-4 py-4 text-center text-muted-foreground text-xs">Sin transacciones pendientes</td></tr>
               )}
 
-          {/* Autorizadas sin Comprobante — always expanded */}
-          {renderSectionHeader('Autorizadas sin Comprobante', groups.autorizadasSinComprobante.length, false)}
-          {groups.autorizadasSinComprobante.length > 0
-            ? groups.autorizadasSinComprobante.map(renderRow)
-            : (
-                <tr>
-                  <td colSpan={colCount} className="px-4 py-4 text-center text-muted-foreground text-xs">
-                    Sin transacciones autorizadas pendientes de comprobante
-                  </td>
-                </tr>
+              {renderSectionHeader('Autorizadas sin Comprobante', groups.autorizadasSinComprobante.length, false)}
+              {groups.autorizadasSinComprobante.length > 0 ? groups.autorizadasSinComprobante.map(renderRow) : (
+                <tr><td colSpan={colCount} className="px-4 py-4 text-center text-muted-foreground text-xs">Sin transacciones autorizadas pendientes de comprobante</td></tr>
               )}
 
-          {/* Historial — collapsible + paginated */}
-          {renderSectionHeader(
-            'Historial',
-            groups.historial.length,
-            true,
-            historialOpen,
-            () => setHistorialOpen((prev) => !prev),
-          )}
-          {historialOpen && (
-            groups.historial.length > 0
-              ? (
+              {renderSectionHeader('Historial', groups.historial.length, true, historialOpen, () => setHistorialOpen((p) => !p))}
+              {historialOpen && (
+                groups.historial.length > 0 ? (
                   <>
-                    {groups.historial
-                      .slice(historialPage * HISTORIAL_PAGE_SIZE, (historialPage + 1) * HISTORIAL_PAGE_SIZE)
-                      .map(renderRow)}
+                    {groups.historial.slice(historialPage * HISTORIAL_PAGE_SIZE, (historialPage + 1) * HISTORIAL_PAGE_SIZE).map(renderRow)}
                     {groups.historial.length > HISTORIAL_PAGE_SIZE && (
-                      <tr>
-                        <td colSpan={colCount} className="px-4 py-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">
-                              {historialPage * HISTORIAL_PAGE_SIZE + 1}–{Math.min((historialPage + 1) * HISTORIAL_PAGE_SIZE, groups.historial.length)} de {groups.historial.length}
-                            </span>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                disabled={historialPage === 0}
-                                onClick={() => setHistorialPage((p) => p - 1)}
-                                className="px-3 py-1 text-xs rounded border border-border text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                              >
-                                ← Anterior
-                              </button>
-                              <button
-                                type="button"
-                                disabled={(historialPage + 1) * HISTORIAL_PAGE_SIZE >= groups.historial.length}
-                                onClick={() => setHistorialPage((p) => p + 1)}
-                                className="px-3 py-1 text-xs rounded border border-border text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                              >
-                                Siguiente →
-                              </button>
-                            </div>
+                      <tr><td colSpan={colCount} className="px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            {historialPage * HISTORIAL_PAGE_SIZE + 1}–{Math.min((historialPage + 1) * HISTORIAL_PAGE_SIZE, groups.historial.length)} de {groups.historial.length}
+                          </span>
+                          <div className="flex gap-2">
+                            <button type="button" disabled={historialPage === 0} onClick={() => setHistorialPage((p) => p - 1)}
+                              className="px-3 py-1 text-xs rounded border border-border text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors">← Anterior</button>
+                            <button type="button" disabled={(historialPage + 1) * HISTORIAL_PAGE_SIZE >= groups.historial.length} onClick={() => setHistorialPage((p) => p + 1)}
+                              className="px-3 py-1 text-xs rounded border border-border text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Siguiente →</button>
                           </div>
-                        </td>
-                      </tr>
+                        </div>
+                      </td></tr>
                     )}
                   </>
+                ) : (
+                  <tr><td colSpan={colCount} className="px-4 py-4 text-center text-muted-foreground text-xs">Sin transacciones completadas</td></tr>
                 )
-              : (
-                  <tr>
-                    <td colSpan={colCount} className="px-4 py-4 text-center text-muted-foreground text-xs">
-                      Sin transacciones completadas
-                    </td>
-                  </tr>
-                )
+              )}
+            </>
           )}
         </tbody>
       </table>
-    </div>
-      )}
     </div>
   );
 }

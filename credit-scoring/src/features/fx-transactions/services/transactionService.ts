@@ -60,8 +60,27 @@ export async function getTransactions(): Promise<FXTransactionSummary[]> {
     }
   }
 
-  // 4. User names not available in local dev (no auth_users_view)
+  // 4. Resolve user names from local_users
   const userMap = new Map<string, string>();
+  const userIds = [
+    ...new Set([
+      ...transactions.map((tx) => tx.created_by),
+      ...transactions.filter((tx) => tx.authorized_by).map((tx) => tx.authorized_by),
+    ].filter(Boolean)),
+  ];
+
+  if (userIds.length > 0) {
+    const { data: users, error: usersError } = await supabase
+      .from('local_users')
+      .select('id, full_name, email')
+      .in('id', userIds);
+
+    if (!usersError && users) {
+      for (const u of users) {
+        userMap.set(u.id, u.full_name || u.email || u.id);
+      }
+    }
+  }
 
   // 5. Assemble summaries
   return transactions.map((tx) => {

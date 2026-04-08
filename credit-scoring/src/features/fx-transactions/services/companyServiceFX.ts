@@ -45,9 +45,26 @@ export async function getCompaniesFX(): Promise<CompanyFX[]> {
     .select('company_id, user_id')
     .in('company_id', companyIds);
 
-  if (!ownersError && owners) {
+  if (!ownersError && owners && owners.length > 0) {
+    // Resolve user IDs to names via local_users
+    const userIds = [...new Set(owners.map((o) => o.user_id).filter(Boolean))];
+    const userNameMap = new Map<string, string>();
+
+    if (userIds.length > 0) {
+      const { data: users } = await supabase
+        .from('local_users')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (users) {
+        for (const u of users) {
+          userNameMap.set(u.id, u.full_name || u.email || u.id);
+        }
+      }
+    }
+
     for (const owner of owners) {
-      ownerMap.set(owner.company_id, owner.user_id ?? 'Sin asignar');
+      ownerMap.set(owner.company_id, userNameMap.get(owner.user_id) ?? owner.user_id ?? 'Sin asignar');
     }
   }
 
