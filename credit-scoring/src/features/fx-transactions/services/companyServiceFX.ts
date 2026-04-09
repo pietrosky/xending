@@ -147,11 +147,32 @@ export async function getCompanyFXById(id: string): Promise<CompanyFX | null> {
     .from('cs_company_payment_accounts')
     .select('*')
     .eq('company_id', id)
+    .eq('deleted', false)
     .order('is_primary', { ascending: false });
+
+  // Fetch primary contact (email + name)
+  let contactEmail = '';
+  let contactName = '';
+  const { data: contacts } = await supabase
+    .from('cs_company_contacts')
+    .select('contact_type, contact_value, contact_name, is_primary')
+    .eq('company_id', id)
+    .eq('contact_type', 'email')
+    .eq('is_primary', true);
+
+  if (contacts) {
+    const primary = (contacts as unknown as Array<{ contact_value: string; contact_name: string | null }>)[0];
+    if (primary) {
+      contactEmail = primary.contact_value ?? '';
+      contactName = primary.contact_name ?? '';
+    }
+  }
 
   return {
     ...company,
     payment_accounts: (!accountsError && accounts ? accounts : []) as PaymentAccount[],
+    contact_email: contactEmail,
+    contact_name: contactName,
   } as CompanyFX;
 }
 
@@ -367,6 +388,27 @@ export async function updateCompanyFX(
 
       if (accountsError) throw new Error(`Error updating payment accounts: ${accountsError.message}`);
     }
+  }
+
+  // Update contact email/name if provided
+  if (input.contact_email !== undefined) {
+    // Delete existing primary email contact and re-insert
+    await supabase
+      .from('cs_company_contacts')
+      .delete()
+      .eq('company_id', id)
+      .eq('contact_type', 'email')
+      .eq('is_primary', true);
+
+    await supabase
+      .from('cs_company_contacts')
+      .insert({
+        company_id: id,
+        contact_type: 'email',
+        contact_value: input.contact_email.trim().toLowerCase(),
+        contact_name: input.contact_name?.trim() || null,
+        is_primary: true,
+      });
   }
 
   const updated = await getCompanyFXById(id);

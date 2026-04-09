@@ -8,9 +8,21 @@
 
 const POSTGREST_URL = import.meta.env.VITE_POSTGREST_URL ?? 'http://localhost:55421';
 
-// JWT for the "anon" role (same demo token used in docker-compose)
+// Anon JWT — used for unauthenticated calls (login RPC)
 const ANON_JWT =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+
+/** Returns the user's JWT if logged in, otherwise the anon JWT */
+function getAuthToken(): string {
+  try {
+    const raw = sessionStorage.getItem('xending_auth_user');
+    if (raw) {
+      const user = JSON.parse(raw);
+      if (user?.token) return user.token;
+    }
+  } catch { /* fallback to anon */ }
+  return ANON_JWT;
+}
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -251,7 +263,7 @@ class PostgrestQueryBuilder<T = Record<string, unknown>> {
   private buildHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${ANON_JWT}`,
+      Authorization: `Bearer ${getAuthToken()}`,
     };
 
     const preferParts: string[] = [...this.preferHeaders];
@@ -287,18 +299,27 @@ class PostgrestMutationBuilder<T = Record<string, unknown>> extends PostgrestQue
 
 import { useAuthStore } from './authStore';
 
+/** Decode JWT payload (no verification — that's PostgREST's job) */
+function decodeJwtPayload(token: string): Record<string, unknown> {
+  try {
+    const payload = token.split('.')[1] ?? '';
+    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+  } catch { return {}; }
+}
+
 const authStub = {
   async getUser() {
     const user = useAuthStore.getState().user;
-    if (!user) return { data: { user: null }, error: { message: 'Not authenticated' } };
+    if (!user?.token) return { data: { user: null }, error: { message: 'Not authenticated' } };
+    const claims = decodeJwtPayload(user.token);
     return {
       data: {
         user: {
-          id: user.id,
-          email: user.email,
-          app_metadata: { role: user.role },
-          user_metadata: { role: user.role, full_name: user.full_name },
-          role: user.role,
+          id: claims.sub as string ?? user.id,
+          email: claims.email as string ?? user.email,
+          app_metadata: { role: claims.role as string ?? user.role },
+          user_metadata: { role: claims.role as string ?? user.role, full_name: claims.full_name as string ?? user.full_name },
+          role: claims.role as string ?? user.role,
         },
       },
       error: null,
@@ -306,8 +327,8 @@ const authStub = {
   },
   async getSession() {
     const user = useAuthStore.getState().user;
-    if (!user) return { data: { session: null }, error: null };
-    return { data: { session: { user: { id: user.id, email: user.email } } }, error: null };
+    if (!user?.token) return { data: { session: null }, error: null };
+    return { data: { session: { user: { id: user.id, email: user.email }, access_token: user.token } }, error: null };
   },
   onAuthStateChange(_callback: unknown) {
     return { data: { subscription: { unsubscribe: () => {} } } };

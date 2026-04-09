@@ -6,11 +6,15 @@ export interface PaymentAccount {
   clabe: string;
   bank_name: string | null;
   is_primary: boolean;
+  deleted: boolean;
+  deleted_at: string | null;
   created_at: string;
 }
 
 export interface CompanyFX extends Company {
   payment_accounts?: PaymentAccount[];
+  contact_email?: string;
+  contact_name?: string;
   owner_name?: string;
   total_buys_usd?: number;
   last_transaction_at?: string;

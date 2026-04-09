@@ -119,12 +119,23 @@ export async function createTransaction(
   input: CreateTransactionInput,
   userId: string,
 ): Promise<FXTransaction> {
+  // Validate markup: brokers can't have negative markup
+  const { data: { user } } = await supabase.auth.getUser();
+  const role = user?.app_metadata?.role || user?.user_metadata?.role || 'broker';
+  if (role !== 'admin' && input.markup_rate < input.base_rate) {
+    throw new Error('Los brokers no pueden aplicar markup negativo');
+  }
+
   const { data, error } = await supabase
     .from('fx_transactions')
     .insert({
       company_id: input.company_id,
+      buys_currency: input.buys_currency,
       buys_usd: input.buys_usd,
+      base_rate: input.base_rate,
+      markup_rate: input.markup_rate,
       exchange_rate: input.exchange_rate,
+      pays_currency: input.pays_currency,
       payment_account_id: input.payment_account_id || null,
       created_by: userId,
     })
@@ -219,7 +230,7 @@ export async function getTransactionById(id: string): Promise<FXTransaction | nu
  */
 export async function updateTransaction(
   transactionId: string,
-  updates: { buys_usd?: number; exchange_rate?: number; company_id?: string; payment_account_id?: string },
+  updates: { buys_usd?: number; exchange_rate?: number; base_rate?: number; markup_rate?: number; company_id?: string; payment_account_id?: string; buys_currency?: string; pays_currency?: string },
 ): Promise<FXTransaction> {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) throw new Error('Usuario no autenticado');
@@ -237,6 +248,10 @@ export async function updateTransaction(
     if (fetchError) throw new Error(`Error fetching transaction: ${fetchError.message}`);
     if (current!.status !== 'pending') {
       throw new Error('Solo se pueden editar transacciones pendientes. Contacte al administrador.');
+    }
+    // Brokers can't have negative markup
+    if (updates.markup_rate !== undefined && updates.base_rate !== undefined && updates.markup_rate < updates.base_rate) {
+      throw new Error('Los brokers no pueden aplicar markup negativo');
     }
   }
 
@@ -296,6 +311,32 @@ export async function cancelTransaction(transactionId: string): Promise<FXTransa
     .single();
 
   if (error) throw new Error(`Error cancelling transaction: ${error.message}`);
+  return data as unknown as FXTransaction;
+}
+
+/**
+ * Revierte la cancelación de una transacción (solo admin).
+ */
+export async function revertCancelTransaction(transactionId: string): Promise<FXTransaction> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error('Usuario no autenticado');
+
+  const role = user.app_metadata?.role || user.user_metadata?.role || 'broker';
+  if (role !== 'admin') throw new Error('Solo el administrador puede revertir cancelaciones');
+
+  const { data, error } = await supabase
+    .from('fx_transactions')
+    .update({
+      cancelled: false,
+      cancelled_at: null,
+      cancelled_by: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', transactionId)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Error reverting cancellation: ${error.message}`);
   return data as unknown as FXTransaction;
 }
 

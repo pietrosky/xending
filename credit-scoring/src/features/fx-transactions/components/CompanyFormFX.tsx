@@ -13,6 +13,8 @@ import {
   RFC_3_REGEX,
   RFC_4_REGEX,
 } from '../../credit-scoring/utils/inputMasks';
+import { DeleteAccountModal } from './DeleteAccountModal';
+import { postgrest } from '@/lib/postgrest';
 import { MaskedInput } from './MaskedInput';
 import { useRFCValidation } from '../hooks/useRFCValidation';
 import type { CompanyFX, CreateCompanyFXInput } from '../types/company-fx.types';
@@ -118,9 +120,11 @@ export function CompanyFormFX({
     zip: '',
     country: 'México',
   });
-  const [clabes, setClabes] = useState<Array<{ clabe: string; bank_name: string }>>([{ clabe: '', bank_name: '' }]);
+  const [clabes, setClabes] = useState<Array<{ clabe: string; bank_name: string; accountId?: string }>>([{ clabe: '', bank_name: '' }]);
   const [owners, setOwners] = useState('');
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [deleteTarget, setDeleteTarget] = useState<{ index: number; clabe: string; bank_name: string; accountId?: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // RFC duplicate validation (debounced API check)
   const rfcValidation = useRFCValidation(rfc, mode === 'edit' ? initialData?.id : null);
@@ -132,15 +136,19 @@ export function CompanyFormFX({
       setRfc(initialData.rfc ?? '');
       setTradeName(initialData.trade_name ?? '');
       setBusinessActivity(initialData.business_activity ?? '');
-      setContactEmail('');
-      setContactName('');
+      setPhone((initialData.metadata as Record<string, string> | undefined)?.phone ?? '');
+      setContactEmail(initialData.contact_email ?? '');
+      setContactName(initialData.contact_name ?? '');
       setAddress(initialData.address ?? { street: '', city: '', state: '', zip: '', country: 'México' });
 
       if (initialData.payment_accounts?.length) {
-        setClabes(initialData.payment_accounts.map((pa) => ({
-          clabe: pa.clabe.replace(/[^0-9]/g, ''),
-          bank_name: pa.bank_name ?? '',
-        })));
+        setClabes(initialData.payment_accounts
+          .filter((pa) => !pa.deleted)
+          .map((pa) => ({
+            clabe: pa.clabe.replace(/[^0-9]/g, ''),
+            bank_name: pa.bank_name ?? '',
+            accountId: pa.id,
+          })));
       }
     }
   }, [mode, initialData]);
@@ -160,7 +168,8 @@ export function CompanyFormFX({
   function updateClabe(index: number, field: 'clabe' | 'bank_name', value: string) {
     setClabes((prev) => {
       const next = [...prev];
-      next[index] = { ...next[index], [field]: value };
+      const current = next[index] ?? { clabe: '', bank_name: '' };
+      next[index] = { ...current, [field]: value };
       return next;
     });
   }
@@ -170,8 +179,30 @@ export function CompanyFormFX({
   }
 
   function removeClabe(index: number) {
-    if (clabes.length <= 1) return; // min 1
-    setClabes((prev) => prev.filter((_, i) => i !== index));
+    if (clabes.length <= 1) return;
+    const account = clabes[index]!;
+    if (account.accountId) {
+      setDeleteTarget({ index, clabe: account.clabe, bank_name: account.bank_name, accountId: account.accountId });
+    } else {
+      setClabes((prev) => prev.filter((_, i) => i !== index));
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+
+    if (deleteTarget.accountId) {
+      // Soft delete in DB
+      await postgrest
+        .from('cs_company_payment_accounts')
+        .update({ deleted: true, deleted_at: new Date().toISOString() })
+        .eq('id', deleteTarget.accountId);
+    }
+
+    setClabes((prev) => prev.filter((_, i) => i !== deleteTarget.index));
+    setDeleteLoading(false);
+    setDeleteTarget(null);
   }
 
   // ─── Submit ──────────────────────────────────────────────────────
@@ -617,6 +648,18 @@ export function CompanyFormFX({
             ? 'Registrar Empresa'
             : 'Guardar Cambios'}
       </button>
+
+      {/* Delete account confirmation modal */}
+      {deleteTarget && (
+        <DeleteAccountModal
+          clabe={deleteTarget.clabe}
+          bankName={deleteTarget.bank_name}
+          index={deleteTarget.index}
+          isLoading={deleteLoading}
+          onConfirm={handleConfirmDelete}
+          onClose={() => setDeleteTarget(null)}
+        />
+      )}
     </form>
   );
 }

@@ -16,6 +16,7 @@ import {
   authorizeTransaction,
   updateTransaction,
   cancelTransaction,
+  revertCancelTransaction,
 } from '../services/transactionService';
 import type { CreateTransactionInput } from '../types/transaction.types';
 
@@ -64,7 +65,7 @@ export function useTransaction(id: string | undefined) {
 export function useUpdateTransaction() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: { buys_usd?: number; exchange_rate?: number; company_id?: string; payment_account_id?: string } }) =>
+    mutationFn: ({ id, updates }: { id: string; updates: { buys_usd?: number; exchange_rate?: number; base_rate?: number; markup_rate?: number; company_id?: string; payment_account_id?: string; buys_currency?: string; pays_currency?: string } }) =>
       updateTransaction(id, updates),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: KEYS.all });
@@ -76,6 +77,16 @@ export function useCancelTransaction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (transactionId: string) => cancelTransaction(transactionId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useRevertCancelTransaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (transactionId: string) => revertCancelTransaction(transactionId),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: KEYS.all });
     },

@@ -5,7 +5,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore, type LocalUser } from '@/lib/authStore';
-import { postgrest } from '@/lib/postgrest';
 import logoSrc from '@/assets/logoxending.png';
 
 export function LoginPage() {
@@ -32,35 +31,41 @@ export function LoginPage() {
 
     setLoading(true);
 
-    const { data, error: fetchErr } = await postgrest
-      .from('local_users')
-      .select('id, email, full_name, password')
-      .eq('email', trimmedEmail)
-      .single();
+    // Call PostgREST RPC login endpoint
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_POSTGREST_URL ?? 'http://localhost:55421'}/rpc/login`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+          },
+          body: JSON.stringify({ email_input: trimmedEmail, password_input: password }),
+        },
+      );
 
-    setLoading(false);
+      setLoading(false);
 
-    if (fetchErr || !data) {
-      setError('Correo o contraseña incorrectos');
-      return;
+      if (!response.ok) {
+        setError('Correo o contraseña incorrectos');
+        return;
+      }
+
+      const result = await response.json();
+      const localUser: LocalUser = {
+        id: result.user.id,
+        email: result.user.email,
+        full_name: result.user.full_name,
+        role: result.user.role,
+        token: result.token,
+      };
+      login(localUser);
+      navigate('/', { replace: true });
+    } catch {
+      setLoading(false);
+      setError('Error de conexión. Verifica que el servidor esté corriendo.');
     }
-
-    const row = data as { id: string; email: string; full_name: string; password: string };
-
-    if (row.password !== password) {
-      setError('Correo o contraseña incorrectos');
-      return;
-    }
-
-    const role = row.email.includes('admin') ? 'admin' : 'broker';
-    const localUser: LocalUser = {
-      id: row.id,
-      email: row.email,
-      full_name: row.full_name,
-      role,
-    };
-    login(localUser);
-    navigate('/', { replace: true });
   }
 
   const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/40';

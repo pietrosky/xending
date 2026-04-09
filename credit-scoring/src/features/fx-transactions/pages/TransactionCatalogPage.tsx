@@ -1,43 +1,52 @@
 /**
  * TransactionCatalogPage — Página del catálogo de transacciones FX.
- *
- * Renderiza TransactionCatalogTable con datos de useTransactions.
- * Botón "Nueva Transacción" navega a /fx/transactions/new.
- * Usa useRole para determinar permisos.
- * Implementa onGeneratePDF que obtiene datos de empresa y cuenta de pago
- * para generar el PDF de orden de pago.
- *
- * Requerimientos: 9.1, 9.2
  */
 
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTransactions, useCancelTransaction } from '../hooks/useTransactions';
+import { useTransactions, useCancelTransaction, useRevertCancelTransaction } from '../hooks/useTransactions';
 import { useRole } from '../hooks/useRole';
 import { TransactionCatalogTable } from '../components/TransactionCatalogTable';
+import { CancelTransactionModal } from '../components/CancelTransactionModal';
+import { RevertCancelModal } from '../components/RevertCancelModal';
 import { getCompanyFXById } from '../services/companyServiceFX';
-import { generatePaymentOrderPDF } from '../services/pdfService';
+import { generatePaymentOrderPDFFromTemplate } from '../services/pdfService';
+import type { FXTransactionSummary } from '../types/transaction.types';
 
 export function TransactionCatalogPage() {
   const navigate = useNavigate();
   const { isAdmin } = useRole();
   const { data: transactions, isLoading, isError, refetch } = useTransactions();
   const cancelMutation = useCancelTransaction();
+  const revertMutation = useRevertCancelTransaction();
+  const [cancelTarget, setCancelTarget] = useState<FXTransactionSummary | null>(null);
+  const [revertTarget, setRevertTarget] = useState<FXTransactionSummary | null>(null);
 
   async function handleGeneratePDF(transactionId: string) {
     const tx = transactions?.find((t) => t.id === transactionId);
     if (!tx) return;
-
     try {
       const company = await getCompanyFXById(tx.company_id);
       if (!company) return;
-
       const paymentAccount = company.payment_accounts?.[0];
       if (!paymentAccount) return;
+      generatePaymentOrderPDFFromTemplate(tx, company, paymentAccount);
+    } catch { /* non-critical */ }
+  }
 
-      generatePaymentOrderPDF(tx, company, paymentAccount);
-    } catch {
-      // Silently fail — PDF generation is non-critical
-    }
+  function handleCancelRequest(txId: string) {
+    const tx = transactions?.find((t) => t.id === txId);
+    if (tx) setCancelTarget(tx);
+  }
+
+  function handleCancelConfirm() {
+    if (!cancelTarget) return;
+    cancelMutation.mutate(cancelTarget.id, {
+      onSuccess: () => {
+        setCancelTarget(null);
+        void refetch();
+      },
+    });
   }
 
   if (isLoading) {
@@ -60,12 +69,8 @@ export function TransactionCatalogPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-foreground">
-            Catálogo de Transacciones
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gestión de transacciones FX
-          </p>
+          <h2 className="text-2xl font-semibold text-foreground">Catálogo de Transacciones</h2>
+          <p className="text-sm text-muted-foreground mt-1">Gestión de transacciones FX</p>
         </div>
         <button
           type="button"
@@ -83,12 +88,35 @@ export function TransactionCatalogPage() {
         onGeneratePDF={handleGeneratePDF}
         onUploadComplete={() => void refetch()}
         onEdit={(txId) => navigate(`/fx/transactions/${txId}/edit`)}
-        onCancel={(txId) => {
-          if (confirm('¿Estás seguro de cancelar esta transacción?')) {
-            cancelMutation.mutate(txId, { onSuccess: () => void refetch() });
-          }
+        onCancel={handleCancelRequest}
+        onRevertCancel={(txId) => {
+          const tx = transactions?.find((t) => t.id === txId);
+          if (tx) setRevertTarget(tx);
         }}
       />
+
+      {/* Cancel confirmation modal */}
+      {cancelTarget && (
+        <CancelTransactionModal
+          transaction={cancelTarget}
+          isLoading={cancelMutation.isPending}
+          onConfirm={handleCancelConfirm}
+          onClose={() => setCancelTarget(null)}
+        />
+      )}
+
+      {revertTarget && (
+        <RevertCancelModal
+          transaction={revertTarget}
+          isLoading={revertMutation.isPending}
+          onConfirm={() => {
+            revertMutation.mutate(revertTarget.id, {
+              onSuccess: () => { setRevertTarget(null); void refetch(); },
+            });
+          }}
+          onClose={() => setRevertTarget(null)}
+        />
+      )}
     </div>
   );
 }

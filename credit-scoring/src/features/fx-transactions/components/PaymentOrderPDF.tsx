@@ -1,13 +1,12 @@
 /**
- * PaymentOrderPDF — Enlace de descarga de PDF de orden de pago.
+ * PaymentOrderPDF — Botón de descarga de PDF de orden de pago.
  *
- * Botón que genera y descarga el PDF de la orden de pago usando `generatePaymentOrderPDF`.
- * Habilitado solo si la transacción tiene folio asignado; deshabilitado en caso contrario.
+ * Genera PDF profesional con template Xending (100% client-side).
  *
  * Requerimientos: 6.1, 6.3
  */
 
-import { generatePaymentOrderPDF } from '../services/pdfService';
+import { generatePaymentOrderPDFFromTemplate } from '../services/pdfService';
 import type { FXTransaction } from '../types/transaction.types';
 import type { CompanyFX, PaymentAccount } from '../types/company-fx.types';
 
@@ -21,7 +20,7 @@ export function PaymentOrderPDF({ transaction, company, paymentAccount }: Paymen
   const hasFolio = Boolean(transaction.folio);
 
   function handleDownload() {
-    generatePaymentOrderPDF(transaction, company, paymentAccount);
+    generatePaymentOrderPDFFromTemplate(transaction, company, paymentAccount);
   }
 
   return (

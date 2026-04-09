@@ -10,6 +10,7 @@ export interface LocalUser {
   email: string;
   full_name: string;
   role: 'admin' | 'broker';
+  token: string;
 }
 
 interface AuthState {
@@ -18,7 +19,6 @@ interface AuthState {
   logout: () => void;
 }
 
-// Persist to sessionStorage so refresh doesn't lose session
 const STORAGE_KEY = 'xending_auth_user';
 
 function loadUser(): LocalUser | null {

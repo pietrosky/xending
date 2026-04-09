@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useCreateTransaction } from '../hooks/useTransactions';
 import { getCompanyFXById } from '../services/companyServiceFX';
-import { generatePaymentOrderPDF } from '../services/pdfService';
+import { generatePaymentOrderPDFFromTemplate } from '../services/pdfService';
 import { TransactionForm } from '../components/TransactionForm';
 import { formatCurrency } from '../utils/formatters';
 import type { FXTransaction } from '../types/transaction.types';
@@ -51,7 +51,7 @@ export function CreateTransactionPage() {
       if (!company) return;
       const paymentAccount = company.payment_accounts?.[0];
       if (!paymentAccount) return;
-      generatePaymentOrderPDF(createdTx, company, paymentAccount);
+      generatePaymentOrderPDFFromTemplate(createdTx, company, paymentAccount);
     } catch {
       // PDF generation is non-critical
     }

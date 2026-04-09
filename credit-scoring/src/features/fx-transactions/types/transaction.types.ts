@@ -1,11 +1,16 @@
 export type TransactionStatus = 'pending' | 'authorized' | 'completed';
+export type FXCurrency = 'USD' | 'MXN';
 
 export interface FXTransaction {
   id: string;
   folio: string;
   company_id: string;
+  buys_currency: FXCurrency;
   buys_usd: number;
+  base_rate: number;
+  markup_rate: number;
   exchange_rate: number;
+  pays_currency: FXCurrency;
   pays_mxn: number;
   status: TransactionStatus;
   payment_account_id: string | null;
@@ -30,6 +35,10 @@ export interface FXTransactionSummary extends FXTransaction {
 export interface CreateTransactionInput {
   company_id: string;
   payment_account_id: string;
+  buys_currency: FXCurrency;
   buys_usd: number;
+  base_rate: number;
+  markup_rate: number;
   exchange_rate: number;
+  pays_currency: FXCurrency;
 }

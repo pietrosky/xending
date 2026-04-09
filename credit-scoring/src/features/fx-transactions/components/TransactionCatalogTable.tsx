@@ -19,9 +19,10 @@ export interface TransactionCatalogTableProps {
   onUploadComplete?: () => void;
   onEdit?: (transactionId: string) => void;
   onCancel?: (transactionId: string) => void;
+  onRevertCancel?: (transactionId: string) => void;
 }
 
-type SortKey = 'folio' | 'company_legal_name' | 'company_rfc' | 'broker_name' | 'buys_usd' | 'exchange_rate' | 'pays_mxn' | 'created_at';
+type SortKey = 'folio' | 'company_legal_name' | 'company_rfc' | 'broker_name' | 'buys_usd' | 'base_rate' | 'markup_rate' | 'pays_mxn' | 'created_at';
 type SortDir = 'asc' | 'desc';
 
 function formatDate(dateStr: string | null): string {
@@ -46,7 +47,7 @@ const HISTORIAL_PAGE_SIZE = 50;
 const filterCls = 'w-full px-2 py-1 mt-1 rounded border border-border bg-card text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary/40';
 
 export function TransactionCatalogTable({
-  transactions, isAdmin, onGeneratePDF, onUploadComplete, onEdit, onCancel,
+  transactions, isAdmin, onGeneratePDF, onUploadComplete, onEdit, onCancel, onRevertCancel,
 }: TransactionCatalogTableProps) {
   const [historialOpen, setHistorialOpen] = useState(false);
   const [historialPage, setHistorialPage] = useState(0);
@@ -87,7 +88,7 @@ export function TransactionCatalogTable({
   }, [transactions, filters, sortKey, sortDir]);
 
   const groups = groupTransactionsByStatus(filtered);
-  const colCount = isAdmin ? 13 : 11;
+  const colCount = isAdmin ? 16 : 14;
 
   // ─── Header with sort + filter row ─────────────────────────────
 
@@ -112,9 +113,11 @@ export function TransactionCatalogTable({
           {th('Razón Social', 'company_legal_name')}
           {th('RFC', 'company_rfc')}
           {isAdmin && th('Broker', 'broker_name')}
-          {th('Buys (USD)', 'buys_usd', 'text-right')}
-          {th('Tipo de Cambio', 'exchange_rate', 'text-right')}
-          {th('Pays (MXN)', 'pays_mxn', 'text-right')}
+          {th('Buys', 'buys_usd', 'text-right')}
+          {th('TC Base', 'base_rate', 'text-right')}
+          {th('TC Markup', 'markup_rate', 'text-right')}
+          {th('Pays', 'pays_mxn', 'text-right')}
+          <th className="px-4 py-2 font-medium text-right">Utilidad</th>
           {th('Fecha', 'created_at')}
           <th className="px-4 py-2 font-medium text-center">Orden de Pago</th>
           <th className="px-4 py-2 font-medium">Autorizada</th>
@@ -131,8 +134,10 @@ export function TransactionCatalogTable({
           ))}
           {/* Empty cells for non-filterable columns */}
           <th className="px-4 py-1" />{/* buys */}
-          <th className="px-4 py-1" />{/* rate */}
+          <th className="px-4 py-1" />{/* base rate */}
+          <th className="px-4 py-1" />{/* markup rate */}
           <th className="px-4 py-1" />{/* pays */}
+          <th className="px-4 py-1" />{/* utilidad */}
           <th className="px-4 py-1" />{/* fecha */}
           <th className="px-4 py-1" />{/* orden */}
           <th className="px-4 py-1" />{/* autorizada */}
@@ -168,9 +173,22 @@ export function TransactionCatalogTable({
         <td className="px-4 py-3">{tx.company_legal_name}</td>
         <td className="px-4 py-3 font-mono text-xs">{tx.company_rfc}</td>
         {isAdmin && <td className="px-4 py-3">{tx.broker_name ?? '—'}</td>}
-        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.buys_usd, 'USD')}</td>
-        <td className="px-4 py-3 text-right tabular-nums">{tx.exchange_rate.toFixed(4)}</td>
-        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.pays_mxn, 'MXN')}</td>
+        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.buys_usd, tx.buys_currency ?? 'USD')}</td>
+        <td className="px-4 py-3 text-right tabular-nums">{(tx.base_rate ?? tx.exchange_rate).toFixed(4)}</td>
+        <td className="px-4 py-3 text-right tabular-nums">{(tx.markup_rate ?? tx.exchange_rate).toFixed(4)}</td>
+        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.pays_mxn, tx.pays_currency ?? 'MXN')}</td>
+        <td className="px-4 py-3 text-right tabular-nums">
+          {(() => {
+            const diff = (tx.markup_rate ?? tx.exchange_rate) - (tx.base_rate ?? tx.exchange_rate);
+            const utilidad = diff * tx.buys_usd;
+            return (
+              <span className={utilidad > 0 ? 'text-green-700' : utilidad < 0 ? 'text-red-700' : ''}>
+                {formatCurrency(Math.abs(utilidad), tx.pays_currency ?? 'MXN')}
+                {utilidad < 0 ? ' (-)' : ''}
+              </span>
+            );
+          })()}
+        </td>
         <td className="px-4 py-3">{formatDate(tx.created_at)}</td>
         <td className="px-4 py-3 text-center">
           {!isCancelled && tx.folio ? (
@@ -212,6 +230,12 @@ export function TransactionCatalogTable({
                 <button type="button" onClick={() => onCancel?.(tx.id)}
                   className="text-red-600 hover:text-red-800 text-xs font-medium underline underline-offset-2 transition-colors">
                   Cancelar
+                </button>
+              )}
+              {isCancelled && (
+                <button type="button" onClick={() => onRevertCancel?.(tx.id)}
+                  className="text-green-600 hover:text-green-800 text-xs font-medium underline underline-offset-2 transition-colors">
+                  Revertir
                 </button>
               )}
             </div>
