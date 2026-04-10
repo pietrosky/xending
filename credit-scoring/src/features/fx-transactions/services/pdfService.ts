@@ -4,7 +4,8 @@
  * Uses HTML templates with embedded CSS, rendered in a popup window
  * for native browser print-to-PDF. No backend/edge function required.
  *
- * Supports: xending, monex, generic templates.
+ * Template based on TemplateService (Node.js) adapted for browser.
+ * Supports: xending (with/without exchange rate + beneficiary section).
  *
  * @see Requirements 6.1, 6.2
  */
@@ -12,6 +13,7 @@
 import type { FXTransaction } from '../types/transaction.types';
 import type { CompanyFX, PaymentAccount } from '../types/company-fx.types';
 import type { CompanyAddress } from '../../onboarding/types/company.types';
+import { invertRate } from '../utils/fxConversion';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -21,10 +23,10 @@ function formatClabe(clabe: string): string {
   return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 17)}-${digits.slice(17)}`;
 }
 
-function formatAddress(address: CompanyAddress): string {
+function formatAddressHTML(address: CompanyAddress): string {
   return [address.street, address.city, address.state, address.zip, address.country]
     .filter(Boolean)
-    .join(', ');
+    .join('<br>');
 }
 
 function formatDate(dateStr: string): string {
@@ -41,7 +43,7 @@ interface DealData {
   [key: string]: unknown;
 }
 
-// ─── CSS Styles ──────────────────────────────────────────────────────
+// ─── CSS Styles (Xending) ────────────────────────────────────────────
 
 function getXendingCSS(): string {
   return `
@@ -53,6 +55,8 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 
 .logo { display: flex; align-items: center; }
 .xending-logo { display: flex; align-items: center; gap: 8px; }
 .logo-text { font-size: 18px; font-weight: 700; color: #334155; }
+.custom-logo { display: flex; align-items: center; gap: 10px; }
+.logo-image { max-height: 50px; width: auto; }
 .header-text { flex: 2; text-align: center; font-size: 10px; color: #7f8c8d; line-height: 1.6; }
 .qr-section { flex: 1; text-align: right; }
 .qr-placeholder { width: 60px; height: 60px; border: 2px solid #00d4aa; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #00d4aa; }
@@ -74,6 +78,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 
 .transaction-row { display: flex; border-bottom: 1px solid #e9ecef; }
 .col-left, .col-center, .col-right { padding: 10px 12px; text-align: center; flex: 1; border-right: 1px solid #e9ecef; }
 .col-right { border-right: none; }
+.fee-text { font-size: 9px; color: #64748b; }
 .total-row { display: flex; justify-content: flex-end; align-items: center; background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%); color: white; padding: 10px 15px; font-weight: 700; font-size: 12px; }
 .total-label { margin-right: 15px; }
 .payment-banner { background: linear-gradient(135deg, #475569 0%, #334155 100%); color: white; padding: 8px 15px; font-weight: 700; font-size: 12px; margin-bottom: 10px; border-radius: 6px; text-align: center; text-transform: uppercase; }
@@ -91,43 +96,140 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 
 `;
 }
 
-// ─── Logo SVG (inline) ───────────────────────────────────────────────
+// ─── Logo SVG (inline, default Xending logo) ─────────────────────────
 
-function getLogoSVG(): string {
-  return `<div class="xending-logo">
-    <svg width="40" height="40" viewBox="0 0 100 100">
-      <defs>
-        <radialGradient id="g1" cx="30%" cy="30%">
-          <stop offset="0%" style="stop-color:#00ffff;stop-opacity:1" />
-          <stop offset="40%" style="stop-color:#00d4aa;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#008b8b;stop-opacity:1" />
-        </radialGradient>
-        <radialGradient id="g2" cx="70%" cy="70%">
-          <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:1" />
-          <stop offset="40%" style="stop-color:#ff8c42;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#cc4125;stop-opacity:1" />
-        </radialGradient>
-      </defs>
-      <path d="M 50 10 A 40 40 0 0 1 85.36 35.36 L 71.21 28.79 A 25 25 0 0 0 50 25 Z" fill="url(#g1)" />
-      <path d="M 85.36 35.36 A 40 40 0 0 1 85.36 64.64 L 71.21 71.21 A 25 25 0 0 0 71.21 28.79 Z" fill="url(#g1)" />
-      <path d="M 85.36 64.64 A 40 40 0 0 1 50 90 L 50 75 A 25 25 0 0 0 71.21 71.21 Z" fill="url(#g2)" />
-      <path d="M 50 90 A 40 40 0 0 1 14.64 64.64 L 28.79 71.21 A 25 25 0 0 0 50 75 Z" fill="url(#g2)" />
-      <path d="M 14.64 64.64 A 40 40 0 0 1 14.64 35.36 L 28.79 28.79 A 25 25 0 0 0 28.79 71.21 Z" fill="url(#g2)" />
-      <path d="M 14.64 35.36 A 40 40 0 0 1 50 10 L 50 25 A 25 25 0 0 0 28.79 28.79 Z" fill="url(#g1)" />
-    </svg>
-    <span class="logo-text">Xending Global</span>
-  </div>`;
+function generateLogoHTML(logoData?: unknown): string {
+  if (!logoData) {
+    return `<div class="xending-logo">
+      <svg width="40" height="40" viewBox="0 0 100 100" class="logo-svg">
+        <defs>
+          <radialGradient id="gradient1" cx="30%" cy="30%">
+            <stop offset="0%" style="stop-color:#00ffff;stop-opacity:1" />
+            <stop offset="40%" style="stop-color:#00d4aa;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#008b8b;stop-opacity:1" />
+          </radialGradient>
+          <radialGradient id="gradient2" cx="70%" cy="70%">
+            <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:1" />
+            <stop offset="40%" style="stop-color:#ff8c42;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#cc4125;stop-opacity:1" />
+          </radialGradient>
+        </defs>
+        <path d="M 50 10 A 40 40 0 0 1 85.36 35.36 L 71.21 28.79 A 25 25 0 0 0 50 25 Z" fill="url(#gradient1)" />
+        <path d="M 85.36 35.36 A 40 40 0 0 1 85.36 64.64 L 71.21 71.21 A 25 25 0 0 0 71.21 28.79 Z" fill="url(#gradient1)" />
+        <path d="M 85.36 64.64 A 40 40 0 0 1 50 90 L 50 75 A 25 25 0 0 0 71.21 71.21 Z" fill="url(#gradient2)" />
+        <path d="M 50 90 A 40 40 0 0 1 14.64 64.64 L 28.79 71.21 A 25 25 0 0 0 50 75 Z" fill="url(#gradient2)" />
+        <path d="M 14.64 64.64 A 40 40 0 0 1 14.64 35.36 L 28.79 28.79 A 25 25 0 0 0 28.79 71.21 Z" fill="url(#gradient2)" />
+        <path d="M 14.64 35.36 A 40 40 0 0 1 50 10 L 50 25 A 25 25 0 0 0 28.79 28.79 Z" fill="url(#gradient1)" />
+      </svg>
+      <span class="logo-text">Xending Global</span>
+    </div>`;
+  }
+
+  // base64 string
+  if (typeof logoData === 'string' && logoData.startsWith('data:image/')) {
+    return `<div class="custom-logo"><img src="${logoData}" alt="Logo" class="logo-image" /></div>`;
+  }
+
+  // object with src
+  if (typeof logoData === 'object' && logoData !== null) {
+    const { src, text, width = '40px', height = '40px' } = logoData as Record<string, string>;
+    if (src) {
+      return `<div class="custom-logo">
+        <img src="${src}" alt="Logo" class="logo-image" style="width: ${width}; height: ${height};" />
+        ${text ? `<span class="logo-text">${text}</span>` : ''}
+      </div>`;
+    }
+  }
+
+  return generateLogoHTML(undefined);
 }
 
-// ─── Xending HTML Template ───────────────────────────────────────────
+// ─── Xending HTML Template (full version) ────────────────────────────
 
 function buildXendingHTML(d: DealData): string {
-  const today = new Date().toLocaleDateString('en-GB');
+  const withoutRate = Boolean(d.withoutExchangeRate);
+
+  // Transaction details — conditional on withoutExchangeRate
+  const transactionBlock = withoutRate
+    ? `<div class="transaction-table">
+        <div class="transaction-header">
+          <div class="col-left">${d.clientName || 'Client'}<br>Buys</div>
+          <div class="col-center">Exchange<br>Rate</div>
+          <div class="col-right">${d.clientName || 'Client'}<br>Pays</div>
+        </div>
+        <div class="transaction-row">
+          <div class="col-left">${d.buyCurrency || 'USD'} ${d.buyAmount || '0.00'}</div>
+          <div class="col-center">1</div>
+          <div class="col-right">${d.buyCurrency || 'USD'} ${d.buyAmount || '0.00'}</div>
+        </div>
+        <div class="total-row">
+          <div class="total-label">Total Due (${d.buyCurrency || 'USD'}):</div>
+          <div class="total-amount">${d.buyAmount || '0.00'}</div>
+        </div>
+      </div>`
+    : `<div class="transaction-table">
+        <div class="transaction-header">
+          <div class="col-left">${d.clientName || 'Client'}<br>Buys</div>
+          <div class="col-center">Exchange<br>Rate</div>
+          <div class="col-right">${d.clientName || 'Client'}<br>Pays</div>
+        </div>
+        <div class="transaction-row">
+          <div class="col-left">${d.buyCurrency || 'USD'} ${d.buyAmount || '0.00'}</div>
+          <div class="col-center">${d.exchangeRate || '0.0000'}</div>
+          <div class="col-right">${d.payCurrency || 'MXN'} ${d.payAmount || '0.00'}<br><span class="fee-text">${d.feeText || ''}</span></div>
+        </div>
+        <div class="total-row">
+          <div class="total-label">Total Due (${d.payCurrency || 'MXN'}):</div>
+          <div class="total-amount">${d.totalDue || '0.00'}</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 20px; margin-bottom: 18px; background: #f8f9fa; padding: 12px 15px; border-radius: 8px; border-left: 4px solid #00d4aa; font-size: 11px;">
+        <div><span style="font-weight: 600; color: #475569;">TC Base (MXP):</span> <span style="color: #1e293b;">${d.baseRate || '0.0000'}</span></div>
+        <div><span style="font-weight: 600; color: #475569;">TC Markup (MXP):</span> <span style="color: #1e293b;">${d.markupRate || '0.0000'}</span></div>
+        <div><span style="font-weight: 600; color: #475569;">Utilidad:</span> <span style="color: #1e293b;">${d.utilidad || '0.0000'}</span></div>
+      </div>`;
+
+  // Payment details — conditional text
+  const paymentDetailsText = withoutRate
+    ? `<p>to pay <strong>Xending Global</strong></p>
+       <p>by Electronic Wire transfer</p>
+       <p>on <strong>${d.tradeDate || ''}</strong> to:</p>`
+    : `<p>to pay <strong>Xending Global ${d.payCurrency || 'MXN'}</strong></p>
+       <p><strong>${d.totalDue || '0.00'}</strong> by Electronic Wire</p>
+       <p>transfer on <strong>${d.tradeDate || ''}</strong> to:</p>`;
+
+  // Beneficiary section — only if beneficiaryAccountNumber is provided
+  const beneficiarySection = d.beneficiaryAccountNumber
+    ? `<div class="payment-banner" style="background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); margin-top: 30px;">BENEFICIARY DETAILS - XENDING PAYS TO</div>
+      <div class="payment-section">
+        <div class="payment-block">
+          <div class="payment-header">Xending Global</div>
+          <div class="payment-details">
+            ${withoutRate
+              ? `<p>Amount <strong>${d.buyCurrency || 'USD'} ${d.buyAmount || '0.00'}</strong></p>
+                 <p>by Wire transfer to:</p>`
+              : `<p>will pay <strong>${d.buyCurrency || 'USD'} ${d.buyAmount || '0.00'}</strong></p>
+                 <p>by Electronic Wire transfer to:</p>
+                 <br><p><strong>Beneficiary Account</strong></p>`}
+          </div>
+        </div>
+        <div class="bank-details"><div class="bank-info">
+          <div class="field-row"><span class="label">CLABE:</span><span class="value">${d.beneficiaryAccountNumber}</span></div>
+          <div class="field-row"><span class="label">Account Name:</span><span class="value">${d.beneficiaryAccountName || ''}</span></div>
+          <div class="field-row"><span class="label">Account Address:</span><span class="value">${d.beneficiaryAccountAddress || ''}</span></div>
+          <div class="field-row"><span class="label">SWIFT:</span><span class="value">${d.beneficiarySwift || ''}</span></div>
+          <div class="field-row"><span class="label">Bank Name:</span><span class="value">${d.beneficiaryBankName || ''}</span></div>
+          <div class="field-row"><span class="label">Bank Address:</span><span class="value">${d.beneficiaryBankAddress || ''}</span></div>
+        </div></div>
+      </div>`
+    : '';
+
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Xending Global - Deal Confirmation</title>
 <style>${getXendingCSS()}</style></head><body><div class="container">
+<!-- Header -->
 <div class="header">
-  <div class="logo-section"><div class="logo">${getLogoSVG()}</div></div>
+  <div class="logo-section"><div class="logo">${generateLogoHTML(d.logo)}</div></div>
   <div class="header-text">
     <p><strong>Xending Global Payments</strong></p>
     <p>Your trusted partner for international</p>
@@ -136,56 +238,38 @@ function buildXendingHTML(d: DealData): string {
   </div>
   <div class="qr-section"><div class="qr-placeholder">QR</div></div>
 </div>
+<!-- Deal header -->
 <div class="deal-header">
-  <div class="deal-number">Deal No. ${d.dealNumber || ''}</div>
+  <div class="deal-number">Deal No. ${d.dealNumber || 'XG-SPOT-001'}</div>
   <div class="contact-info">
     <span>www.xendingglobal.com</span>
     <span>T: +52 55.1234.5678</span>
     <span>E: deals@xendingglobal.com</span>
   </div>
 </div>
+<!-- Confirmation banner -->
 <div class="confirmation-banner">XENDING GLOBAL - DEAL CONFIRMATION</div>
+<!-- Client and deal info -->
 <div class="info-section">
   <div class="left-column">
     <div class="field-row"><span class="label">Client:</span><span class="value">${d.clientName || ''}</span></div>
     <div class="address">${d.clientAddress || ''}</div>
-    <div class="field-row"><span class="label">Booked By:</span><span class="value">${d.bookedBy || ''}</span></div>
-    <div class="field-row"><span class="label">Account #:</span><span class="value">${d.accountNumber || ''}</span></div>
-    <div class="field-row"><span class="label">Remarks:</span><span class="value">${d.remarks || 'Processed by Xending Global Platform'}</span></div>
   </div>
   <div class="right-column">
-    <div class="field-row"><span class="label">Trade Date:</span><span class="value">${d.tradeDate || today}</span></div>
+    <div class="field-row"><span class="label">Trade Date:</span><span class="value">${d.tradeDate || ''}</span></div>
     <div class="field-row"><span class="label">Deal Type:</span><span class="value">${d.dealType || 'Spot'}</span></div>
-    <div class="field-row"><span class="label">Rel Manager:</span><span class="value">${d.relManager || 'Xending Global Team'}</span></div>
-    <div class="field-row"><span class="label">FX Dealer:</span><span class="value">${d.fxDealer || 'Xending FX Desk'}</span></div>
-    <div class="field-row"><span class="label">Processor:</span><span class="value">${d.processor || 'Xending Global Platform'}</span></div>
   </div>
 </div>
+<!-- Transaction details -->
 <div class="transaction-banner">TRANSACTION DETAILS</div>
-<div class="transaction-table">
-  <div class="transaction-header">
-    <div class="col-left">${d.clientName || 'Client'}<br>Buys</div>
-    <div class="col-center">Exchange<br>Rate</div>
-    <div class="col-right">${d.clientName || 'Client'}<br>Pays</div>
-  </div>
-  <div class="transaction-row">
-    <div class="col-left">${d.buyCurrency || 'USD'} ${d.buyAmount || '0.00'}</div>
-    <div class="col-center">${d.exchangeRate || '0.0000'}</div>
-    <div class="col-right">${d.payCurrency || 'MXN'} ${d.payAmount || '0.00'}<br>${d.feeText || ''}</div>
-  </div>
-  <div class="total-row">
-    <div class="total-label">Total Due (${d.payCurrency || 'MXN'}):</div>
-    <div class="total-amount">${d.totalDue || '0.00'}</div>
-  </div>
-</div>
+${transactionBlock}
+<!-- Payment instructions -->
 <div class="payment-banner">PAYMENT INSTRUCTIONS</div>
 <div class="payment-section">
   <div class="payment-block">
     <div class="payment-header">${d.clientName || 'Client'}</div>
     <div class="payment-details">
-      <p>to pay <strong>Xending Global ${d.payCurrency || 'MXN'}</strong></p>
-      <p><strong>${d.totalDue || '0.00'}</strong> by Electronic Wire</p>
-      <p>transfer on <strong>${d.transferDate || today}</strong> to:</p>
+      ${paymentDetailsText}
       <br><p>Payment must be received for</p>
       <p>Xending Global to process the currency exchange.</p>
     </div>
@@ -200,10 +284,15 @@ function buildXendingHTML(d: DealData): string {
     <div class="field-row"><span class="label">By Order Of:</span><span class="value">${d.byOrderOf1 || d.clientName || ''}</span></div>
   </div></div>
 </div>
-<div class="footer">
-  <div class="office"><strong>Mexico City</strong><br>Torre Xending, Av. Reforma 123<br>Ciudad de Mexico, CDMX 01000<br>+52 55.1234.5678 phone</div>
-  <div class="office"><strong>Guadalajara</strong><br>Centro Xending, Av. Americas 456<br>Guadalajara, JAL 44100<br>+52 33.8765.4321 phone</div>
-  <div class="office"><strong>Monterrey</strong><br>Plaza Xending, Av. Constitucion 789<br>Monterrey, NL 64000<br>+52 81.2468.1357 phone</div>
+<!-- Beneficiary section (if applicable) -->
+${beneficiarySection}
+<!-- Disclaimer footer -->
+<div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-top: 2px solid #e9ecef; border-radius: 8px;">
+  <p style="text-align: center; font-size: 11px; color: #6c757d; margin: 0; line-height: 1.6;">
+    <strong style="color: #2c3e50;">Important Notice:</strong><br>
+    Xending is a technology services provider, not a bank.<br>
+    Xending is powered by Conduit.
+  </p>
 </div>
 </div></body></html>`;
 }
@@ -217,7 +306,6 @@ function openPrintWindow(html: string): void {
   }
   printWindow.document.write(html);
   printWindow.document.close();
-  // Wait for content to render, then trigger print
   printWindow.onload = () => {
     setTimeout(() => printWindow.print(), 500);
   };
@@ -230,6 +318,8 @@ function openPrintWindow(html: string): void {
  * Renders HTML template in a popup window with native browser print dialog.
  * 100% client-side, no backend required.
  *
+ * Includes: withoutExchangeRate mode, beneficiary section, disclaimer.
+ *
  * @see Requirements 6.1, 6.2
  */
 export function generatePaymentOrderPDFFromTemplate(
@@ -237,26 +327,37 @@ export function generatePaymentOrderPDFFromTemplate(
   company: CompanyFX,
   paymentAccount: PaymentAccount,
 ): void {
+  // Always display rates in MXP (pesos por dólar)
+  const isSell = transaction.buys_currency === 'MXN';
+  const displayBaseRate = isSell ? invertRate(transaction.base_rate) : transaction.base_rate;
+  const displayMarkupRate = isSell ? invertRate(transaction.markup_rate) : transaction.markup_rate;
+  const displayExchangeRate = isSell ? invertRate(transaction.exchange_rate) : transaction.exchange_rate;
+  const displayUtilidad = displayMarkupRate - displayBaseRate;
+
   const dealData: DealData = {
     dealNumber: transaction.folio,
     clientName: company.legal_name,
-    clientAddress: formatAddress(company.address),
-    accountNumber: paymentAccount.clabe ? formatClabe(paymentAccount.clabe) : '',
+    clientAddress: formatAddressHTML(company.address),
     tradeDate: formatDate(transaction.created_at),
     dealType: 'Spot',
-    relManager: 'Xending Capital',
-    processor: 'Xending Capital Platform',
     buyCurrency: transaction.buys_currency,
     buyAmount: transaction.buys_usd.toLocaleString('en-US', { minimumFractionDigits: 2 }),
-    exchangeRate: transaction.exchange_rate.toFixed(4),
+    exchangeRate: displayExchangeRate.toFixed(4),
+    baseRate: displayBaseRate.toFixed(4),
+    markupRate: displayMarkupRate.toFixed(4),
+    utilidad: (isSell ? displayUtilidad * -1 : displayUtilidad).toFixed(4),
     payCurrency: transaction.pays_currency,
     payAmount: transaction.pays_mxn.toLocaleString('en-US', { minimumFractionDigits: 2 }),
     totalDue: transaction.pays_mxn.toLocaleString('en-US', { minimumFractionDigits: 2 }),
-    transferDate: formatDate(transaction.created_at),
+    // Payment instructions — Xending's receiving account
     accountNumber1: paymentAccount.clabe ? formatClabe(paymentAccount.clabe) : '',
     accountName1: company.legal_name,
     bankName1: paymentAccount.bank_name || '',
     byOrderOf1: company.legal_name,
+    // Beneficiary — where Xending sends the bought currency
+    beneficiaryAccountNumber: paymentAccount.clabe ? formatClabe(paymentAccount.clabe) : '',
+    beneficiaryAccountName: company.legal_name,
+    beneficiaryBankName: paymentAccount.bank_name || '',
   };
 
   const html = buildXendingHTML(dealData);
@@ -265,6 +366,5 @@ export function generatePaymentOrderPDFFromTemplate(
 
 /**
  * Legacy alias — kept for backward compatibility.
- * Now delegates to the template-based generator.
  */
 export const generatePaymentOrderPDF = generatePaymentOrderPDFFromTemplate;

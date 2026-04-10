@@ -87,5 +87,23 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # ─── Edge Functions (Deno runtime) ──────────────────────────────────
+  functions:
+    image: denoland/deno:latest
+    container_name: xending-functions
+    ports:
+      - "55430:8000"
+    environment:
+      SUPABASE_URL: http://rest:3000
+      SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+    volumes:
+      - ./supabase/functions:/functions
+    command: ["run", "--allow-net", "--allow-env", "--allow-read", "/functions/fx-payment-order/index.ts"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   xending-db-data:

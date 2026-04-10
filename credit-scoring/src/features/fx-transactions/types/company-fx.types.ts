@@ -5,6 +5,7 @@ export interface PaymentAccount {
   company_id: string;
   clabe: string;
   bank_name: string | null;
+  currency: 'USD' | 'MXP';
   is_primary: boolean;
   deleted: boolean;
   deleted_at: string | null;
@@ -27,7 +28,7 @@ export interface CreateCompanyFXInput {
   business_activity: string;
   phone?: string;
   address: CompanyAddress;
-  payment_accounts: Array<{ clabe: string; bank_name?: string }>;
+  payment_accounts: Array<{ clabe: string; bank_name?: string; currency?: 'USD' | 'MXP' }>;
   contact_email: string;
   contact_name?: string;
 }

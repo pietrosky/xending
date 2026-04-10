@@ -120,7 +120,7 @@ export function CompanyFormFX({
     zip: '',
     country: 'México',
   });
-  const [clabes, setClabes] = useState<Array<{ clabe: string; bank_name: string; accountId?: string }>>([{ clabe: '', bank_name: '' }]);
+  const [clabes, setClabes] = useState<Array<{ clabe: string; bank_name: string; currency: 'USD' | 'MXP'; accountId?: string }>>([{ clabe: '', bank_name: '', currency: 'USD' }]);
   const [owners, setOwners] = useState('');
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [deleteTarget, setDeleteTarget] = useState<{ index: number; clabe: string; bank_name: string; accountId?: string } | null>(null);
@@ -147,6 +147,7 @@ export function CompanyFormFX({
           .map((pa) => ({
             clabe: pa.clabe.replace(/[^0-9]/g, ''),
             bank_name: pa.bank_name ?? '',
+            currency: pa.currency ?? 'USD',
             accountId: pa.id,
           })));
       }
@@ -165,17 +166,17 @@ export function CompanyFormFX({
 
   // ─── CLABE management ────────────────────────────────────────────
 
-  function updateClabe(index: number, field: 'clabe' | 'bank_name', value: string) {
+  function updateClabe(index: number, field: 'clabe' | 'bank_name' | 'currency', value: string) {
     setClabes((prev) => {
       const next = [...prev];
-      const current = next[index] ?? { clabe: '', bank_name: '' };
+      const current = next[index] ?? { clabe: '', bank_name: '', currency: 'USD' as const };
       next[index] = { ...current, [field]: value };
       return next;
     });
   }
 
   function addClabe() {
-    setClabes((prev) => [...prev, { clabe: '', bank_name: '' }]);
+    setClabes((prev) => [...prev, { clabe: '', bank_name: '', currency: 'USD' }]);
   }
 
   function removeClabe(index: number) {
@@ -233,7 +234,7 @@ export function CompanyFormFX({
       address,
       payment_accounts: clabes
         .filter((c) => /^\d{18}$/.test(c.clabe))
-        .map((c) => ({ clabe: c.clabe, bank_name: c.bank_name || undefined })),
+        .map((c) => ({ clabe: c.clabe, bank_name: c.bank_name || undefined, currency: c.currency })),
       contact_email: contactEmail.trim(),
       contact_name: contactName.trim() || undefined,
     };
@@ -520,7 +521,7 @@ export function CompanyFormFX({
 
         {clabes.map((account, idx) => (
           <div key={idx} className="flex items-start gap-2">
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label
                   htmlFor={`cfx-clabe-${idx}`}
@@ -554,6 +555,23 @@ export function CompanyFormFX({
                   className={inputOk}
                   placeholder="Nombre del banco"
                 />
+              </div>
+              <div>
+                <label
+                  htmlFor={`cfx-currency-${idx}`}
+                  className="block text-sm font-medium text-foreground mb-1"
+                >
+                  Moneda
+                </label>
+                <select
+                  id={`cfx-currency-${idx}`}
+                  value={account.currency}
+                  onChange={(e) => updateClabe(idx, 'currency', e.target.value)}
+                  className={inputOk}
+                >
+                  <option value="USD">USD</option>
+                  <option value="MXP">MXP</option>
+                </select>
               </div>
             </div>
             {clabes.length > 1 && (

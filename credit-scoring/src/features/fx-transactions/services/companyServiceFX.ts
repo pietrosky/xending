@@ -283,6 +283,7 @@ export async function createCompanyFX(
       company_id: company.id,
       clabe: acc.clabe.replace(/[^0-9]/g, ''), // Store raw digits
       bank_name: acc.bank_name || null,
+      currency: acc.currency || 'USD',
       is_primary: index === 0,
     }));
 
@@ -379,6 +380,7 @@ export async function updateCompanyFX(
         company_id: id,
         clabe: acc.clabe.replace(/[^0-9]/g, ''),
         bank_name: acc.bank_name || null,
+        currency: acc.currency || 'USD',
         is_primary: index === 0,
       }));
 

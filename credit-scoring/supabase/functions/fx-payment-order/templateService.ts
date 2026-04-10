@@ -4,7 +4,7 @@
  * Adapted for Deno Edge Functions (ESM, no Node.js fs/path).
  * CSS is embedded inline. Logo is generated as inline SVG.
  *
- * Supported partners: monex, xending, generic, promoter-report, xending-consolidated
+ * Supported partners: monex, xending, generic
  */
 
 import { getMonexCSS, getXendingCSS, getGenericCSS } from './styles.ts';
@@ -29,7 +29,7 @@ type DealData = Record<string, any>;
 
 export class TemplateService {
   static getAvailablePartners(): string[] {
-    return ['monex', 'xending', 'generic', 'promoter-report', 'xending-consolidated'];
+    return ['monex', 'xending', 'generic'];
   }
 
   static isValidPartner(partner: string): boolean {
@@ -45,10 +45,6 @@ export class TemplateService {
         return this.generateXendingHTML(dealData);
       case 'generic':
         return this.generateGenericHTML(dealData);
-      case 'promoter-report':
-        return this.generatePromoterReportHTML(dealData);
-      case 'xending-consolidated':
-        return this.generateXendingConsolidatedHTML(dealData);
       default:
         throw new Error(`Template not found for partner: ${partner}`);
     }
@@ -122,6 +118,7 @@ export class TemplateService {
     return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Monex Deal Confirmation</title>
 <style>${getMonexCSS()}</style></head><body><div class="container">
+<!-- Header with logo and QR -->
 <div class="header">
   <div class="logo-section"><div class="logo">${this.generateLogoHTML(d.logo)}</div></div>
   <div class="header-text">
@@ -133,6 +130,7 @@ export class TemplateService {
   </div>
   <div class="qr-section"><div class="qr-code"><div class="qr-placeholder">QR</div></div></div>
 </div>
+<!-- Deal header info -->
 <div class="deal-header">
   <div class="deal-number">Deal No. ${d.dealNumber || 'TMP-USA-DEAL-0424313'}</div>
   <div class="contact-info">
@@ -141,62 +139,68 @@ export class TemplateService {
     <span>F: +1 202.785.2554</span>
   </div>
 </div>
+<!-- Deal confirmation banner -->
 <div class="confirmation-banner">DEAL CONFIRMATION</div>
+<!-- Client and deal info -->
 <div class="info-section">
   <div class="left-column">
-    <div class="field-row"><span class="label">Client:</span><span class="value">${d.clientName || ''}</span></div>
-    <div class="address">${d.clientAddress || ''}</div>
-    <div class="field-row"><span class="label">Booked By:</span><span class="value">${d.bookedBy || ''}</span></div>
-    <div class="field-row"><span class="label">Acct. #:</span><span class="value">${d.accountNumber || ''}</span></div>
+    <div class="field-row"><span class="label">Client:</span><span class="value">${d.clientName || 'EDGAR EL PANA DEL RITMO SA DE CV'}</span></div>
+    <div class="address">${d.clientAddress || 'EL ZAR 3344<br>SAN NICOLAS DE LOS<br>GARZA,NUEVO LEON,Mexico'}</div>
+    <div class="field-row"><span class="label">Booked By:</span><span class="value">${d.bookedBy || 'XendingGlobalAPI_fvo_LVgbNNxB0O5'}</span></div>
+    <div class="field-row"><span class="label">Acct. #:</span><span class="value">${d.accountNumber || '0016474'}</span></div>
     <div class="field-row"><span class="label">Remarks:</span><span class="value">${d.remarks || ''}</span></div>
   </div>
   <div class="right-column">
-    <div class="field-row"><span class="label">Trade Date:</span><span class="value">${d.tradeDate || ''}</span></div>
+    <div class="field-row"><span class="label">Trade Date:</span><span class="value">${d.tradeDate || '28-Sep-2025'}</span></div>
     <div class="field-row"><span class="label">Deal Type:</span><span class="value">${d.dealType || 'Spot'}</span></div>
-    <div class="field-row"><span class="label">Rel Manager:</span><span class="value">${d.relManager || ''}</span></div>
-    <div class="field-row"><span class="label">FX Dealer:</span><span class="value">${d.fxDealer || ''}</span></div>
-    <div class="field-row"><span class="label">Processor:</span><span class="value">${d.processor || ''}</span></div>
+    <div class="field-row"><span class="label">Rel Manager:</span><span class="value">${d.relManager || 'Xending Global'}</span></div>
+    <div class="field-row"><span class="label">FX Dealer:</span><span class="value">${d.fxDealer || 'Adam Kane'}</span></div>
+    <div class="field-row"><span class="label">Processor:</span><span class="value">${d.processor || 'Xending Global'}</span></div>
   </div>
 </div>
+<!-- Transaction details -->
 <div class="transaction-banner">DEAL TRANSACTION DETAILS</div>
 <div class="transaction-table">
   <div class="transaction-header">
-    <div class="col-left">${d.clientName || 'Client'}<br>Buys</div>
+    <div class="col-left">${d.clientName || 'EDGAR EL PANA DEL RITMO SA DE CV'}<br>Buys</div>
     <div class="col-center">Exchange<br>Rate</div>
-    <div class="col-right">${d.clientName || 'Client'}<br>Pays</div>
+    <div class="col-right">${d.clientName || 'EDGAR EL PANA DEL RITMO SA DE CV'}<br>Pays</div>
   </div>
   <div class="transaction-row">
-    <div class="col-left">${d.buyCurrency || 'USD'} ${d.buyAmount || '0.00'}</div>
-    <div class="col-center">${d.exchangeRate || '0.0000'}</div>
-    <div class="col-right">${d.payCurrency || 'MXN'} ${d.payAmount || '0.00'}<br>${d.feeText || ''}</div>
+    <div class="col-left">${d.buyCurrency || 'USD'} ${d.buyAmount || '4,999.00'}</div>
+    <div class="col-center">${d.exchangeRate || '1.1587'}</div>
+    <div class="col-right">${d.payCurrency || 'EUR'} ${d.payAmount || '4,314.32'}<br>${d.feeText || 'USD 20.00 (Fees)'}</div>
   </div>
   <div class="total-row">
-    <div class="total-label">Total Due (${d.payCurrency || 'MXN'}):</div>
-    <div class="total-amount">${d.totalDue || '0.00'}</div>
+    <div class="total-label">Total Due (${d.payCurrency || 'EUR'}):</div>
+    <div class="total-amount">${d.totalDue || '4,314.32'}</div>
   </div>
 </div>
+<!-- Payment instructions -->
 <div class="payment-banner">PAYMENT INSTRUCTIONS</div>
 <div class="payment-section">
   <div class="payment-block">
-    <div class="payment-header">${d.clientName || 'Client'}</div>
+    <div class="payment-header">${d.clientName || 'EDGAR EL PANA DEL RITMO SA DE CV'}</div>
     <div class="payment-details">
-      <p>to pay <strong>Monex USA ${d.payCurrency || 'MXN'}</strong></p>
-      <p><strong>${d.payAmount || '0.00'}</strong> by Electronic Wire</p>
-      <p>transfer on <strong>${d.transferDate || ''}</strong> to:</p>
-      <br><p>Payment must be received for</p>
+      <p>to pay <strong>Monex USA EUR</strong></p>
+      <p><strong>${d.payAmount || '4,314.32'}</strong> by Electronic Wire</p>
+      <p>transfer on <strong>${d.transferDate || '28-Sep-2025'}</strong> to:</p>
+      <br>
+      <p>Payment must be received for</p>
       <p>Monex USA to send the currency.</p>
     </div>
   </div>
   <div class="bank-details"><div class="bank-info">
-    <div class="field-row"><span class="label">Account Number:</span><span class="value">${d.accountNumber1 || ''}</span></div>
-    <div class="field-row"><span class="label">Account Name:</span><span class="value">${d.accountName1 || ''}</span></div>
-    <div class="field-row"><span class="label">Account Address:</span><span class="value">${d.accountAddress1 || ''}</span></div>
-    <div class="field-row"><span class="label">SWIFT:</span><span class="value">${d.swift1 || ''}</span></div>
-    <div class="field-row"><span class="label">Bank Name:</span><span class="value">${d.bankName1 || ''}</span></div>
-    <div class="field-row"><span class="label">Bank Address:</span><span class="value">${d.bankAddress1 || ''}</span></div>
-    <div class="field-row"><span class="label">By Order Of:</span><span class="value">${d.byOrderOf1 || d.clientName || ''}</span></div>
+    <div class="field-row"><span class="label">Account Number:</span><span class="value">${d.accountNumber1 || 'DE37 5031 0400 0437 7961 00'}</span></div>
+    <div class="field-row"><span class="label">Account Name:</span><span class="value">${d.accountName1 || 'Monex USA'}</span></div>
+    <div class="field-row"><span class="label">Account Address:</span><span class="value">${d.accountAddress1 || '1201 New York Avenue, NW, Suite 300 Washington, DC 20005 USA'}</span></div>
+    <div class="field-row"><span class="label">SWIFT:</span><span class="value">${d.swift1 || 'BARCDEFF'}</span></div>
+    <div class="field-row"><span class="label">Bank Name:</span><span class="value">${d.bankName1 || 'Barclays Bank PLC'}</span></div>
+    <div class="field-row"><span class="label">Bank Address:</span><span class="value">${d.bankAddress1 || 'Frankfurt, Germany'}</span></div>
+    <div class="field-row"><span class="label">By Order Of:</span><span class="value">${d.byOrderOf1 || d.clientName || 'EDGAR EL PANA DEL RITMO SA DE CV'}</span></div>
   </div></div>
 </div>
+<!-- Footer with office locations -->
 <div class="footer">
   <div class="office"><strong>Washington, DC</strong><br>1101 K St NW, Suite 600<br>Washington, DC 20005<br>+1 800.834.2497 phone</div>
   <div class="office"><strong>Los Angeles</strong><br>8383 Wilshire Blvd, Suite 1032<br>Beverly Hills, CA 90211<br>+1 855.606.8346 phone</div>
@@ -205,13 +209,81 @@ export class TemplateService {
 </div></body></html>`;
   }
 
-  // ── Xending Template ────────────────────────────────────────────
+  // ── Xending Template (full: withoutExchangeRate + beneficiary + disclaimer) ──
 
   static generateXendingHTML(d: DealData): string {
-    const today = new Date().toLocaleDateString('en-GB');
+    const withoutRate = Boolean(d.withoutExchangeRate);
+
+    const transactionBlock = withoutRate
+      ? `<!-- Versión SIN tipo de cambio - Mantener formato de tabla -->
+        <div class="transaction-table">
+          <div class="transaction-header">
+            <div class="col-left">${d.clientName || 'IMPORTADORA MEXICANA SA DE CV'}<br>Buys</div>
+            <div class="col-center">Exchange<br>Rate</div>
+            <div class="col-right">${d.clientName || 'IMPORTADORA MEXICANA SA DE CV'}<br>Pays</div>
+          </div>
+          <div class="transaction-row">
+            <div class="col-left">${d.buyCurrency || 'USD'} ${d.buyAmount || '100,000.00'}</div>
+            <div class="col-center">1</div>
+            <div class="col-right">${d.buyCurrency || 'USD'} ${d.buyAmount || '100,000.00'}</div>
+          </div>
+          <div class="total-row">
+            <div class="total-label">Total Due (${d.buyCurrency || 'USD'}):</div>
+            <div class="total-amount">${d.buyAmount || '100,000.00'}</div>
+          </div>
+        </div>`
+      : `<!-- Versión CON tipo de cambio -->
+        <div class="transaction-table">
+          <div class="transaction-header">
+            <div class="col-left">${d.clientName || 'IMPORTADORA MEXICANA SA DE CV'}<br>Buys</div>
+            <div class="col-center">Exchange<br>Rate</div>
+            <div class="col-right">${d.clientName || 'IMPORTADORA MEXICANA SA DE CV'}<br>Pays</div>
+          </div>
+          <div class="transaction-row">
+            <div class="col-left">${d.buyCurrency || 'USD'} ${d.buyAmount || '100,000.00'}</div>
+            <div class="col-center">${d.exchangeRate || '17.8500'}</div>
+            <div class="col-right">${d.payCurrency || 'MXN'} ${d.payAmount || '1,785,000.00'}<br><span class="fee-text">${d.feeText || 'MXN 2,500.00 (Xending Fee)'}</span></div>
+          </div>
+          <div class="total-row">
+            <div class="total-label">Total Due (${d.payCurrency || 'MXN'}):</div>
+            <div class="total-amount">${d.totalDue || '1,787,500.00'}</div>
+          </div>
+        </div>`;
+
+    const paymentDetailsText = withoutRate
+      ? `<p>to pay <strong>Xending Global</strong></p>
+         <p>by Electronic Wire transfer</p>
+         <p>on <strong>${d.tradeDate || '29/09/2025'}</strong> to:</p>`
+      : `<p>to pay <strong>Xending Global ${d.payCurrency || 'MXN'}</strong></p>
+         <p><strong>${d.totalDue || '1,787,500.00'}</strong> by Electronic Wire</p>
+         <p>transfer on <strong>${d.tradeDate || '29/09/2025'}</strong> to:</p>`;
+
+    const beneficiarySection = d.beneficiaryAccountNumber
+      ? `<div class="payment-banner" style="background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); margin-top: 30px;">BENEFICIARY DETAILS - XENDING PAYS TO</div>
+        <div class="payment-section">
+          <div class="payment-block">
+            <div class="payment-header">Xending Global</div>
+            <div class="payment-details">
+              ${withoutRate
+                ? `<p>Amount <strong>${d.buyCurrency || 'USD'} ${d.buyAmount || '100,000.00'}</strong></p><p>by Wire transfer to:</p>`
+                : `<p>will pay <strong>${d.buyCurrency || 'USD'} ${d.buyAmount || '100,000.00'}</strong></p><p>by Electronic Wire transfer to:</p><br><p><strong>Beneficiary Account</strong></p>`}
+            </div>
+          </div>
+          <div class="bank-details"><div class="bank-info">
+            <div class="field-row"><span class="label">CLABE:</span><span class="value">${d.beneficiaryAccountNumber}</span></div>
+            <div class="field-row"><span class="label">Account Name:</span><span class="value">${d.beneficiaryAccountName || ''}</span></div>
+            <div class="field-row"><span class="label">Account Address:</span><span class="value">${d.beneficiaryAccountAddress || ''}</span></div>
+            <div class="field-row"><span class="label">SWIFT:</span><span class="value">${d.beneficiarySwift || ''}</span></div>
+            <div class="field-row"><span class="label">Bank Name:</span><span class="value">${d.beneficiaryBankName || ''}</span></div>
+            <div class="field-row"><span class="label">Bank Address:</span><span class="value">${d.beneficiaryBankAddress || ''}</span></div>
+          </div></div>
+        </div>`
+      : '';
+
     return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Xending Global - Deal Confirmation</title>
 <style>${getXendingCSS()}</style></head><body><div class="container">
+<!-- Header with Xending logo -->
 <div class="header">
   <div class="logo-section"><div class="logo">${this.generateLogoHTML(d.logo)}</div></div>
   <div class="header-text">
@@ -222,74 +294,62 @@ export class TemplateService {
   </div>
   <div class="qr-section"><div class="qr-code"><div class="qr-placeholder">QR</div></div></div>
 </div>
+<!-- Deal header info -->
 <div class="deal-header">
-  <div class="deal-number">Deal No. ${d.dealNumber || ''}</div>
+  <div class="deal-number">Deal No. ${d.dealNumber || 'XG-SPOT-001'}</div>
   <div class="contact-info">
     <span>www.xendingglobal.com</span>
     <span>T: +52 55.1234.5678</span>
     <span>E: deals@xendingglobal.com</span>
   </div>
 </div>
+<!-- Deal confirmation banner -->
 <div class="confirmation-banner">XENDING GLOBAL - DEAL CONFIRMATION</div>
+<!-- Client and deal info -->
 <div class="info-section">
   <div class="left-column">
-    <div class="field-row"><span class="label">Client:</span><span class="value">${d.clientName || ''}</span></div>
-    <div class="address">${d.clientAddress || ''}</div>
-    <div class="field-row"><span class="label">Booked By:</span><span class="value">${d.bookedBy || ''}</span></div>
-    <div class="field-row"><span class="label">Account #:</span><span class="value">${d.accountNumber || ''}</span></div>
-    <div class="field-row"><span class="label">Remarks:</span><span class="value">${d.remarks || 'Processed by Xending Global Platform'}</span></div>
+    <div class="field-row"><span class="label">Client:</span><span class="value">${d.clientName || 'IMPORTADORA MEXICANA SA DE CV'}</span></div>
+    <div class="address">${d.clientAddress || 'AV. REFORMA 456<br>COL. JUAREZ, CDMX 06600<br>MEXICO'}</div>
   </div>
   <div class="right-column">
-    <div class="field-row"><span class="label">Trade Date:</span><span class="value">${d.tradeDate || today}</span></div>
+    <div class="field-row"><span class="label">Trade Date:</span><span class="value">${d.tradeDate || '29/09/2025'}</span></div>
     <div class="field-row"><span class="label">Deal Type:</span><span class="value">${d.dealType || 'Spot'}</span></div>
-    <div class="field-row"><span class="label">Rel Manager:</span><span class="value">${d.relManager || 'Xending Global Team'}</span></div>
-    <div class="field-row"><span class="label">FX Dealer:</span><span class="value">${d.fxDealer || 'Xending FX Desk'}</span></div>
-    <div class="field-row"><span class="label">Processor:</span><span class="value">${d.processor || 'Xending Global Platform'}</span></div>
   </div>
 </div>
+<!-- Transaction details -->
 <div class="transaction-banner">TRANSACTION DETAILS</div>
-<div class="transaction-table">
-  <div class="transaction-header">
-    <div class="col-left">${d.clientName || 'Client'}<br>Buys</div>
-    <div class="col-center">Exchange<br>Rate</div>
-    <div class="col-right">${d.clientName || 'Client'}<br>Pays</div>
-  </div>
-  <div class="transaction-row">
-    <div class="col-left">${d.buyCurrency || 'USD'} ${d.buyAmount || '0.00'}</div>
-    <div class="col-center">${d.exchangeRate || '0.0000'}</div>
-    <div class="col-right">${d.payCurrency || 'MXN'} ${d.payAmount || '0.00'}<br>${d.feeText || ''}</div>
-  </div>
-  <div class="total-row">
-    <div class="total-label">Total Due (${d.payCurrency || 'MXN'}):</div>
-    <div class="total-amount">${d.totalDue || '0.00'}</div>
-  </div>
-</div>
+${transactionBlock}
+<!-- Payment instructions -->
 <div class="payment-banner">PAYMENT INSTRUCTIONS</div>
 <div class="payment-section">
   <div class="payment-block">
-    <div class="payment-header">${d.clientName || 'Client'}</div>
+    <div class="payment-header">${d.clientName || 'IMPORTADORA MEXICANA SA DE CV'}</div>
     <div class="payment-details">
-      <p>to pay <strong>Xending Global ${d.payCurrency || 'MXN'}</strong></p>
-      <p><strong>${d.totalDue || '0.00'}</strong> by Electronic Wire</p>
-      <p>transfer on <strong>${d.transferDate || today}</strong> to:</p>
-      <br><p>Payment must be received for</p>
+      ${paymentDetailsText}
+      <br>
+      <p>Payment must be received for</p>
       <p>Xending Global to process the currency exchange.</p>
     </div>
   </div>
   <div class="bank-details"><div class="bank-info">
-    <div class="field-row"><span class="label">Account Number:</span><span class="value">${d.accountNumber1 || ''}</span></div>
-    <div class="field-row"><span class="label">Account Name:</span><span class="value">${d.accountName1 || ''}</span></div>
-    <div class="field-row"><span class="label">Account Address:</span><span class="value">${d.accountAddress1 || ''}</span></div>
-    <div class="field-row"><span class="label">SWIFT:</span><span class="value">${d.swift1 || ''}</span></div>
-    <div class="field-row"><span class="label">Bank Name:</span><span class="value">${d.bankName1 || ''}</span></div>
-    <div class="field-row"><span class="label">Bank Address:</span><span class="value">${d.bankAddress1 || ''}</span></div>
-    <div class="field-row"><span class="label">By Order Of:</span><span class="value">${d.byOrderOf1 || d.clientName || ''}</span></div>
+    <div class="field-row"><span class="label">Account Number:</span><span class="value">${d.accountNumber1 || 'MX98765432109876543210'}</span></div>
+    <div class="field-row"><span class="label">Account Name:</span><span class="value">${d.accountName1 || 'Xending Global Payments'}</span></div>
+    <div class="field-row"><span class="label">Account Address:</span><span class="value">${d.accountAddress1 || 'Torre Xending, Av. Reforma 123, CDMX, Mexico'}</span></div>
+    <div class="field-row"><span class="label">SWIFT:</span><span class="value">${d.swift1 || 'XENDMX22'}</span></div>
+    <div class="field-row"><span class="label">Bank Name:</span><span class="value">${d.bankName1 || 'Banco Xending Mexico'}</span></div>
+    <div class="field-row"><span class="label">Bank Address:</span><span class="value">${d.bankAddress1 || 'Ciudad de Mexico, Mexico'}</span></div>
+    <div class="field-row"><span class="label">By Order Of:</span><span class="value">${d.byOrderOf1 || d.clientName || 'IMPORTADORA MEXICANA SA DE CV'}</span></div>
   </div></div>
 </div>
-<div class="footer">
-  <div class="office"><strong>Mexico City</strong><br>Torre Xending, Av. Reforma 123<br>Ciudad de Mexico, CDMX 01000<br>+52 55.1234.5678 phone</div>
-  <div class="office"><strong>Guadalajara</strong><br>Centro Xending, Av. Americas 456<br>Guadalajara, JAL 44100<br>+52 33.8765.4321 phone</div>
-  <div class="office"><strong>Monterrey</strong><br>Plaza Xending, Av. Constitucion 789<br>Monterrey, NL 64000<br>+52 81.2468.1357 phone</div>
+<!-- Beneficiary Section - Xending Paga A -->
+${beneficiarySection}
+<!-- Disclaimer Footer -->
+<div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-top: 2px solid #e9ecef; border-radius: 8px;">
+  <p style="text-align: center; font-size: 11px; color: #6c757d; margin: 0; line-height: 1.6;">
+    <strong style="color: #2c3e50;">Important Notice:</strong><br>
+    Xending is a technology services provider, not a bank.<br>
+    Xending is powered by Conduit.
+  </p>
 </div>
 </div></body></html>`;
   }
@@ -310,219 +370,4 @@ export class TemplateService {
 </div>
 </div></body></html>`;
   }
-
-  // ── Promoter Report Template ────────────────────────────────────
-
-  static generatePromoterReportHTML(data: DealData): string {
-    const companies: Array<{ name: string; operations: number; revenue: number; commission: number }> = data.companies || [];
-    const brokerCompanies: Array<{ name: string; commission: number }> = data.brokerCompanies || [];
-
-    const totalOps = companies.reduce((sum, c) => sum + (c.operations || 0), 0);
-    const calculatedTotalCommission = companies.reduce((sum, c) => sum + (c.commission || 0), 0);
-
-    const fmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-    const companyRows = companies.map(c => `
-      <div class="transaction-row">
-        <div class="col-left" style="text-align: left; flex: 2; padding-left: 15px;">${c.name}</div>
-        <div class="col-center" style="flex: 1; color: #2c3e50;">${c.operations || 0}</div>
-        <div class="col-center" style="flex: 1; color: #2c3e50;">$${fmt(c.revenue || 0)}</div>
-        <div class="col-right" style="flex: 1; color: #00d4aa; padding-right: 15px;">$${fmt(c.commission || 0)}</div>
-      </div>`).join('');
-
-    const brokerRows = brokerCompanies.map(c => `
-      <div class="transaction-row">
-        <div class="col-left" style="text-align: left; flex: 3; padding-left: 15px;">${c.name}</div>
-        <div class="col-right" style="flex: 1; color: #e67e22; padding-right: 15px;">+$${fmt(c.commission || 0)}</div>
-      </div>`).join('');
-
-    const brokerSection = brokerCompanies.length > 0 ? `
-      <div class="payment-banner">Ganancias por Brokeraje (Adicional)</div>
-      <div class="transaction-table" style="border-color: #e67e22;">
-        <div class="transaction-header" style="background: linear-gradient(135deg, #fce4ce 0%, #fbeddb 100%); border-bottom-color: #e67e22;">
-          <div class="col-left" style="flex: 3; text-align: left; color: #d35400; padding-left: 15px;">Empresa / Origen</div>
-          <div class="col-right" style="flex: 1; color: #d35400; padding-right: 15px;">Comisión Broker</div>
-        </div>
-        ${brokerRows}
-        <div class="total-row" style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);">
-          <span style="margin-right: 20px;">TOTAL BROKERAJE:</span>
-          <span style="padding-right: 15px;">+$${fmt(data.brokerCommission || 0)}</span>
-        </div>
-      </div>` : '';
-
-    return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Reporte de Comisiones - ${data.promoterName || 'Promotor'}</title>
-<style>${getPromoterReportCSS()}</style></head><body><div class="container">
-<div class="header">
-  <div class="logo-section">${this.generateLogoHTML(data.logo)}</div>
-  <div class="header-text">Xending Global Payments<br>Your trusted partner for international<br>foreign exchange transactions</div>
-</div>
-<div class="confirmation-banner">REPORTE DE COMISIONES</div>
-<div class="info-section">
-  <div class="column">
-    <div class="field-row"><span class="label">Promotor:</span><span class="value" style="font-size: 13px;">${data.promoterName || 'Promotor'}</span></div>
-    <div class="field-row"><span class="label">Periodo:</span><span class="value">${data.period || 'Mes Actual'}</span></div>
-    <div class="field-row"><span class="label">ID Reporte:</span><span class="value">${Date.now().toString().slice(-8)}</span></div>
-  </div>
-  <div class="column">
-    <div class="field-row"><span class="label">Rate Comisión:</span><span class="value">${((data.commissionRate || 0) * 100).toFixed(0)}%</span></div>
-    <div class="field-row"><span class="label">Total Operaciones:</span><span class="value">${totalOps}</span></div>
-    <div class="field-row"><span class="label">Fecha:</span><span class="value">${new Date().toLocaleDateString('es-MX')}</span></div>
-  </div>
-</div>
-<div class="transaction-banner">Desglose de Comisiones Directas</div>
-<div class="transaction-table">
-  <div class="transaction-header">
-    <div class="col-left" style="flex: 2; text-align: left; padding-left: 15px;">Empresa / Cliente</div>
-    <div class="col-center" style="flex: 1;">Operaciones</div>
-    <div class="col-center" style="flex: 1;">Revenue Base</div>
-    <div class="col-right" style="flex: 1; padding-right: 15px;">Tu Comisión</div>
-  </div>
-  ${companyRows}
-  <div class="total-row">
-    <span style="margin-right: 20px;">TOTAL COMISIONES DIRECTAS:</span>
-    <span style="padding-right: 15px;">$${fmt(calculatedTotalCommission)}</span>
-  </div>
-</div>
-${brokerSection}
-<div class="info-section" style="background: #e0f2f1; border-color: #00897b; align-items: center; justify-content: space-between;">
-  <div style="font-size: 14px; font-weight: 700; color: #00695c;">TOTAL A PAGAR (NETO):</div>
-  <div style="font-size: 24px; font-weight: 800; color: #004d40;">$${fmt(data.totalCommission || 0)}</div>
-</div>
-<div class="footer">
-  <div class="office"><strong>Mexico City</strong><br>Torre Xending, Av. Reforma 123<br>Ciudad de Mexico, CDMX 01000<br>+52 55.1234.5678 phone</div>
-  <div class="office"><strong>Guadalajara</strong><br>Centro Xending, Av. Americas 456<br>Guadalajara, JAL 44100<br>+52 33.8765.4321 phone</div>
-  <div class="office"><strong>Monterrey</strong><br>Plaza Xending, Av. Constitucion 789<br>Monterrey, NL 64000<br>+52 81.2468.1357 phone</div>
-</div>
-<div class="confidential-mark">Xending Global Payments &bull; Confidential Document</div>
-</div></body></html>`;
-  }
-
-  // ── Xending Consolidated Report Template ────────────────────────
-
-  static generateXendingConsolidatedHTML(data: DealData): string {
-    const promoters: Array<{ name: string; totalRevenue: number; totalCommission: number; brokerCommission: number; xendingProfit: number; netCommission: number }> = data.promoters || [];
-    const totalRevenue = promoters.reduce((sum, p) => sum + (p.totalRevenue || 0), 0);
-    const totalPromoterComm = promoters.reduce((sum, p) => sum + (p.totalCommission || 0), 0);
-    const totalBrokerComm = promoters.reduce((sum, p) => sum + (p.brokerCommission || 0), 0);
-    const totalXendingProfit = promoters.reduce((sum, p) => sum + (p.xendingProfit || 0), 0);
-    const totalPayout = promoters.reduce((sum, p) => sum + (p.netCommission || 0), 0);
-
-    const fmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-    const promoterRows = promoters.map(p => `
-      <div class="transaction-row">
-        <div class="col-left" style="text-align: left; flex: 3; padding-left: 15px; font-weight: 600;">${p.name}</div>
-        <div class="col-center" style="flex: 2; color: #64748b;">$${fmt(p.totalRevenue || 0)}</div>
-        <div class="col-center" style="flex: 2; color: #e67e22;">$${fmt(p.xendingProfit || 0)}</div>
-        <div class="col-right" style="flex: 2; color: #00d4aa; padding-right: 15px; font-weight: 700;">$${fmt(p.netCommission || 0)}</div>
-      </div>`).join('');
-
-    return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Reporte Consolidado - Xending Global</title>
-<style>${getConsolidatedCSS()}</style></head><body><div class="container">
-<div class="header">
-  <div class="logo-section">${this.generateLogoHTML(data.logo)}</div>
-  <div class="header-text">Xending Global Payments<br>Internal Management Report</div>
-</div>
-<div class="confirmation-banner">
-  <span>Reporte Mensual Consolidado</span>
-  <span>${data.period || 'Periodo Actual'}</span>
-</div>
-<div class="summary-grid">
-  <div class="summary-box"><div class="box-label">Total Revenue</div><div class="box-value">$${fmt(totalRevenue)}</div></div>
-  <div class="summary-box"><div class="box-label">Total Comisiones</div><div class="box-value" style="color: #ef4444;">-$${fmt(totalPromoterComm + totalBrokerComm)}</div></div>
-  <div class="summary-box highlight"><div class="box-label">Xending Profit (Gross)</div><div class="box-value">$${fmt(totalXendingProfit)}</div></div>
-  <div class="summary-box" style="background: #f0f9ff; border-color: #0ea5e9;"><div class="box-label">Net Payout (Total)</div><div class="box-value" style="color: #0284c7;">$${fmt(totalPayout)}</div></div>
-</div>
-<div style="margin-bottom: 10px; font-weight: 700; text-transform: uppercase; color: #475569; border-left: 4px solid #00d4aa; padding-left: 10px;">Resumen por Promotor</div>
-<div class="transaction-table">
-  <div class="transaction-header">
-    <div class="col-left" style="flex: 3; text-align: left; padding-left: 15px;">Promotor (Owner)</div>
-    <div class="col-center" style="flex: 2;">Total Revenue</div>
-    <div class="col-center" style="flex: 2;">Xending Profit</div>
-    <div class="col-right" style="flex: 2; padding-right: 15px;">Total a Pagar</div>
-  </div>
-  ${promoterRows}
-  <div class="total-row">
-    <span style="margin-right: 20px;">TOTAL A DISPERSAR:</span>
-    <span style="padding-right: 15px;">$${fmt(totalPayout)}</span>
-  </div>
-</div>
-<div class="footer">
-  <div class="office"><strong>Mexico City</strong><br>Torre Xending, Av. Reforma 123</div>
-  <div class="office"><strong>Guadalajara</strong><br>Centro Xending, Av. Americas 456</div>
-  <div class="office"><strong>Monterrey</strong><br>Plaza Xending, Av. Constitucion 789</div>
-</div>
-<div class="confidential-mark">Xending Global Payments &bull; CONFIDENTIAL &bull; INTERNAL USE ONLY</div>
-</div></body></html>`;
-  }
-}
-
-// ── Inline CSS for promoter report (shared styles) ────────────────
-
-function getPromoterReportCSS(): string {
-  return `
-@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap');
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 11px; line-height: 1.4; color: #2c3e50; background: white; }
-.container { width: 100%; max-width: 210mm; margin: 0 auto; padding: 12mm; }
-.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #00d4aa; }
-.logo-section { flex: 1; display: flex; align-items: center; gap: 12px; }
-.custom-logo { display: flex; align-items: center; gap: 10px; }
-.logo-image { max-height: 55px; width: auto; }
-.logo-text { font-size: 22px; font-weight: 700; color: #334155; margin-left: 8px; }
-.header-text { text-align: right; font-size: 10px; color: #7f8c8d; font-style: italic; }
-.confirmation-banner { background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%); color: white; padding: 12px 20px; font-weight: 700; font-size: 16px; margin-bottom: 20px; border-radius: 6px; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
-.info-section { display: flex; gap: 40px; margin-bottom: 25px; background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #00d4aa; }
-.column { flex: 1; }
-.field-row { margin-bottom: 10px; display: flex; }
-.label { font-weight: 600; width: 120px; flex-shrink: 0; color: #34495e; }
-.value { flex: 1; color: #2c3e50; font-weight: 500; }
-.transaction-banner { background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); color: white; padding: 10px 20px; font-weight: 700; font-size: 14px; margin-bottom: 10px; border-radius: 6px; text-align: center; text-transform: uppercase; }
-.transaction-table { border: 2px solid #e9ecef; margin-bottom: 25px; border-radius: 8px; overflow: hidden; }
-.transaction-header { display: flex; background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%); border-bottom: 2px solid #bdc3c7; font-weight: 700; color: #2c3e50; font-size: 11px; text-transform: uppercase; }
-.transaction-row { display: flex; background: white; border-bottom: 1px solid #e9ecef; }
-.transaction-row:last-child { border-bottom: none; }
-.col-left, .col-center, .col-right { padding: 12px 15px; text-align: center; border-right: 1px solid #e9ecef; }
-.col-right { border-right: none; }
-.total-row { display: flex; justify-content: flex-end; align-items: center; background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%); color: white; padding: 12px 20px; font-weight: 700; font-size: 14px; }
-.payment-banner { background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); color: white; padding: 10px 20px; font-weight: 700; font-size: 14px; margin-bottom: 15px; border-radius: 6px; text-align: center; text-transform: uppercase; }
-.footer { display: flex; justify-content: space-between; border-top: 3px solid #00d4aa; padding-top: 20px; margin-top: 35px; font-size: 9px; background: linear-gradient(135deg, #f8f9fa 0%, #ecf0f1 100%); padding: 20px; border-radius: 8px; color: #7f8c8d; }
-.office { flex: 1; text-align: center; }
-.office strong { font-size: 10px; color: #2c3e50; display: block; margin-bottom: 5px; }
-.confidential-mark { text-align: center; margin-top: 20px; font-size: 9px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 2px; }
-`;
-}
-
-function getConsolidatedCSS(): string {
-  return `
-@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap');
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 11px; line-height: 1.4; color: #2c3e50; background: white; }
-.container { width: 100%; max-width: 210mm; margin: 0 auto; padding: 12mm; }
-.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #00d4aa; }
-.logo-section { flex: 1; display: flex; align-items: center; gap: 12px; }
-.custom-logo { display: flex; align-items: center; gap: 10px; }
-.logo-image { max-height: 55px; width: auto; }
-.logo-text { font-size: 22px; font-weight: 700; color: #334155; margin-left: 8px; }
-.header-text { text-align: right; font-size: 10px; color: #7f8c8d; font-style: italic; }
-.confirmation-banner { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; padding: 12px 20px; font-weight: 700; font-size: 16px; margin-bottom: 20px; border-radius: 6px; text-align: center; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; }
-.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
-.summary-box { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center; }
-.summary-box.highlight { background: #f0fdf4; border-color: #00d4aa; }
-.box-label { font-size: 10px; text-transform: uppercase; color: #64748b; margin-bottom: 5px; font-weight: 700; }
-.box-value { font-size: 16px; font-weight: 700; color: #1e293b; font-family: Consolas, monospace; }
-.transaction-table { border: 2px solid #e9ecef; margin-bottom: 25px; border-radius: 8px; overflow: hidden; }
-.transaction-header { display: flex; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-bottom: 2px solid #cbd5e1; font-weight: 700; color: #475569; font-size: 11px; text-transform: uppercase; padding: 10px 0; }
-.transaction-row { display: flex; background: white; border-bottom: 1px solid #e9ecef; padding: 12px 0; align-items: center; }
-.transaction-row:last-child { border-bottom: none; }
-.col-left, .col-center, .col-right { text-align: center; }
-.total-row { display: flex; justify-content: flex-end; align-items: center; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 15px 20px; font-weight: 700; font-size: 14px; }
-.info-section { display: flex; gap: 40px; margin-bottom: 25px; background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #00d4aa; }
-.footer { display: flex; justify-content: space-between; border-top: 3px solid #00d4aa; padding-top: 20px; margin-top: 35px; font-size: 9px; color: #7f8c8d; }
-.office { flex: 1; text-align: center; }
-.office strong { font-size: 10px; color: #2c3e50; display: block; margin-bottom: 5px; }
-.confidential-mark { text-align: center; margin-top: 20px; font-size: 9px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 2px; }
-`;
 }

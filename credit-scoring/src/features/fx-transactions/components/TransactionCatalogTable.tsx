@@ -174,16 +174,31 @@ export function TransactionCatalogTable({
         <td className="px-4 py-3 font-mono text-xs">{tx.company_rfc}</td>
         {isAdmin && <td className="px-4 py-3">{tx.broker_name ?? '—'}</td>}
         <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.buys_usd, tx.buys_currency ?? 'USD')}</td>
-        <td className="px-4 py-3 text-right tabular-nums">{(tx.base_rate ?? tx.exchange_rate).toFixed(4)}</td>
-        <td className="px-4 py-3 text-right tabular-nums">{(tx.markup_rate ?? tx.exchange_rate).toFixed(4)}</td>
+        <td className="px-4 py-3 text-right tabular-nums">
+          {(tx.buys_currency === 'MXN' ? 1 / (tx.base_rate ?? tx.exchange_rate) : (tx.base_rate ?? tx.exchange_rate)).toFixed(4)}
+        </td>
+        <td className="px-4 py-3 text-right tabular-nums">
+          {(tx.buys_currency === 'MXN' ? 1 / (tx.markup_rate ?? tx.exchange_rate) : (tx.markup_rate ?? tx.exchange_rate)).toFixed(4)}
+        </td>
         <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.pays_mxn, tx.pays_currency ?? 'MXN')}</td>
         <td className="px-4 py-3 text-right tabular-nums">
           {(() => {
-            const diff = (tx.markup_rate ?? tx.exchange_rate) - (tx.base_rate ?? tx.exchange_rate);
-            const utilidad = diff * tx.buys_usd;
+            const isSell = tx.buys_currency === 'MXN';
+            let utilidad: number;
+            if (isSell) {
+              // Venta: rates almacenados como USD/MXN → invertir a MXN/USD
+              const baseInv = 1 / (tx.base_rate ?? tx.exchange_rate);
+              const markupInv = 1 / (tx.markup_rate ?? tx.exchange_rate);
+              // pays_mxn contiene el monto en USD en operaciones de venta
+              utilidad = (markupInv - baseInv) * tx.pays_mxn;
+            } else {
+              // Compra: rates ya en MXN/USD, buys_usd es el monto USD
+              const diff = (tx.markup_rate ?? tx.exchange_rate) - (tx.base_rate ?? tx.exchange_rate);
+              utilidad = diff * tx.buys_usd;
+            }
             return (
               <span className={utilidad > 0 ? 'text-green-700' : utilidad < 0 ? 'text-red-700' : ''}>
-                {formatCurrency(Math.abs(utilidad), tx.pays_currency ?? 'MXN')}
+                {formatCurrency(Math.abs(utilidad), 'MXN')}
                 {utilidad < 0 ? ' (-)' : ''}
               </span>
             );

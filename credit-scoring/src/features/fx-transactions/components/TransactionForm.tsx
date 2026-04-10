@@ -12,6 +12,9 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { CompanySearchInput } from './CompanySearchInput';
+import { OperationTabs } from './OperationTabs';
+import type { OperationTab } from './OperationTabs';
+import { deriveTabFromCurrency, getCurrenciesForTab, transformRatesForSubmit } from '../utils/fxConversion';
 import { getCompanyFXById } from '../services/companyServiceFX';
 import { formatCurrency } from '../utils/formatters';
 import { maskClabe } from '../../credit-scoring/utils/inputMasks';
@@ -73,6 +76,8 @@ function validate(
   baseRateRaw: string,
   markupRateRaw: string,
   paymentAccountId: string,
+  activeTab: OperationTab = 'buy',
+  hasFilteredAccounts: boolean = true,
 ): FieldErrors {
   const errors: FieldErrors = {};
 
@@ -85,21 +90,26 @@ function validate(
     errors.buys_usd = 'Monto debe ser mayor a 0';
   }
 
+  const zeroRateMsg = activeTab === 'sell' ? 'Tipo de cambio debe ser mayor a 0' : 'Debe ser mayor a 0';
+
   const base = parseFloat(baseRateRaw);
   if (!baseRateRaw.trim()) {
     errors.base_rate = 'Tipo de cambio base es requerido';
   } else if (isNaN(base) || base <= 0) {
-    errors.base_rate = 'Debe ser mayor a 0';
+    errors.base_rate = zeroRateMsg;
   }
 
   const markup = parseFloat(markupRateRaw);
   if (!markupRateRaw.trim()) {
     errors.markup_rate = 'Tipo de cambio markup es requerido';
   } else if (isNaN(markup) || markup <= 0) {
-    errors.markup_rate = 'Debe ser mayor a 0';
+    errors.markup_rate = zeroRateMsg;
   }
 
-  if (company && !paymentAccountId) {
+  if (company && !hasFilteredAccounts) {
+    const currencyLabel = activeTab === 'buy' ? 'MXP' : 'USD';
+    errors.payment_account = `No hay cuentas de pago en ${currencyLabel} registradas para esta empresa`;
+  } else if (company && !paymentAccountId) {
     errors.payment_account = 'Debe seleccionar una cuenta de pago';
   }
 
@@ -142,6 +152,9 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
   const [paymentAccountId, setPaymentAccountId] = useState(initialData?.payment_account_id ?? '');
   const [buysCurrency, setBuysCurrency] = useState<FXCurrency>(initialData?.buys_currency ?? 'USD');
   const [paysCurrency, setPaysCurrency] = useState<FXCurrency>(initialData?.pays_currency ?? 'MXN');
+  const [activeTab, setActiveTab] = useState<OperationTab>(
+    deriveTabFromCurrency(initialData?.buys_currency ?? 'USD'),
+  );
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const isEdit = mode === 'edit';
@@ -169,31 +182,47 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
     setBuysDisplay(formatCurrencyDisplay(raw));
   }, []);
 
-  const errors = validate(selectedCompany, buysRaw, baseRateRaw, markupRateRaw, paymentAccountId);
+  const accounts = selectedCompany?.payment_accounts ?? [];
+  const filteredAccounts = accounts.filter((acc) =>
+    activeTab === 'buy' ? acc.currency === 'MXP' : acc.currency === 'USD',
+  );
+
+  // Auto-select when only one account matches
+  useEffect(() => {
+    if (filteredAccounts.length === 1 && paymentAccountId !== filteredAccounts[0]!.id) {
+      setPaymentAccountId(filteredAccounts[0]!.id);
+    }
+  }, [filteredAccounts.length, filteredAccounts[0]?.id, paymentAccountId]);
+
+  const errors = validate(selectedCompany, buysRaw, baseRateRaw, markupRateRaw, paymentAccountId, activeTab, filteredAccounts.length > 0);
 
   // Markup difference and chip
   const baseRate = parseFloat(baseRateRaw) || 0;
   const markupRate = parseFloat(markupRateRaw) || 0;
-  const markupDiff = markupRate - baseRate;
+  const rawDiff = markupRate - baseRate;
+  const markupDiff = activeTab === 'buy' ? rawDiff * -1 : rawDiff;
   const effectiveRate = markupRate || baseRate;
 
   // Real-time Pays calculation
   const paysDisplay = useMemo(() => {
     const buys = parseFloat(buysRaw);
     if (!isNaN(buys) && buys > 0 && effectiveRate > 0) {
-      const pays = Math.round(buys * effectiveRate * 100) / 100;
-      return formatCurrency(pays, paysCurrency as 'USD' | 'MXN');
+      const pays = Math.round((buys * effectiveRate) * 100) / 100;
+      return formatCurrency(pays, 'MXN');
     }
-    return `${paysCurrency} 0.00`;
-  }, [buysRaw, effectiveRate, paysCurrency]);
+    return 'MXN 0.00';
+  }, [buysRaw, effectiveRate]);
 
   function handleBlur(field: string) {
     setTouched((prev) => ({ ...prev, [field]: true }));
   }
 
-  function handleBuysCurrencyChange(currency: FXCurrency) {
-    setBuysCurrency(currency);
-    setPaysCurrency(currency === 'USD' ? 'MXN' : 'USD');
+  function handleTabChange(tab: OperationTab) {
+    setActiveTab(tab);
+    const { buysCurrency: buys, paysCurrency: pays } = getCurrenciesForTab(tab);
+    setBuysCurrency(buys);
+    setPaysCurrency(pays);
+    setPaymentAccountId('');
   }
 
   function handleCompanySelect(company: CompanyFX) {
@@ -218,14 +247,22 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
 
     if (Object.keys(errors).length > 0) return;
 
+    // Validate zero rates in sell tab to prevent division by zero
+    if (activeTab === 'sell' && (baseRate === 0 || markupRate === 0)) {
+      setTouched(allTouched);
+      return;
+    }
+
+    const transformed = transformRatesForSubmit(activeTab, baseRate, markupRate);
+
     onSubmit({
       company_id: selectedCompany!.id,
       payment_account_id: paymentAccountId,
       buys_currency: buysCurrency,
       buys_usd: parseFloat(buysRaw),
-      base_rate: baseRate,
-      markup_rate: markupRate,
-      exchange_rate: effectiveRate,
+      base_rate: transformed.base_rate,
+      markup_rate: transformed.markup_rate,
+      exchange_rate: transformed.exchange_rate,
       pays_currency: paysCurrency,
     });
   }
@@ -248,8 +285,6 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
   function errMsg(field: string): string | undefined {
     return touched[field] ? (errors as Record<string, string | undefined>)[field] : undefined;
   }
-
-  const accounts = selectedCompany?.payment_accounts ?? [];
 
   return (
     <form
@@ -354,93 +389,86 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
         </fieldset>
       )}
 
+      {/* ─── Operation Tabs ─────────────────────────────────────── */}
+      <OperationTabs activeTab={activeTab} onChange={handleTabChange} disabled={readOnly} />
+
       {/* ─── Transaction fields ───────────────────────────────────── */}
       <fieldset className="space-y-4">
         <legend className="text-sm font-semibold text-foreground">Datos de la Operación</legend>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Buys — currency selector + amount */}
+          {/* Buys — amount */}
           <div>
             <label htmlFor="tx-buys" className="block text-sm font-medium text-foreground mb-1">
-              Xending Compra
+              {activeTab === 'buy' ? 'Compra (USD)' : 'Vende (USD)'}
             </label>
-            <div className="flex gap-2">
-              <select
-                value={buysCurrency}
-                onChange={(e) => handleBuysCurrencyChange(e.target.value as FXCurrency)}
-                disabled={readOnly}
-                className={readOnly ? `${readOnlyInput} w-24` : `${inputOk} w-24`}
-              >
-                <option value="USD">USD</option>
-                <option value="MXN">MXN</option>
-              </select>
-              <input
-                id="tx-buys"
-                type="text"
-                inputMode="decimal"
-                value={buysDisplay}
-                onChange={handleBuysChange}
-                onBlur={() => handleBlur('buys_usd')}
-                className={readOnly ? readOnlyInput : cls('buys_usd')}
-                placeholder="0.00"
-                readOnly={readOnly}
-                tabIndex={readOnly ? -1 : undefined}
-                aria-invalid={!!errMsg('buys_usd')}
-              />
-            </div>
+            <input
+              id="tx-buys"
+              type="text"
+              inputMode="decimal"
+              value={buysDisplay}
+              onChange={handleBuysChange}
+              onBlur={() => handleBlur('buys_usd')}
+              className={readOnly ? readOnlyInput : cls('buys_usd')}
+              placeholder="0.00"
+              readOnly={readOnly}
+              tabIndex={readOnly ? -1 : undefined}
+              aria-invalid={!!errMsg('buys_usd')}
+            />
             {errMsg('buys_usd') && (
               <p className="text-xs text-status-error mt-1" role="alert">{errMsg('buys_usd')}</p>
             )}
           </div>
 
-          {/* Base Rate */}
-          <div>
-            <label htmlFor="tx-base-rate" className="block text-sm font-medium text-foreground mb-1">
-              TC Base
-            </label>
-            <input
-              id="tx-base-rate"
-              type="number"
-              inputMode="decimal"
-              step="0.0001"
-              min="0.0001"
-              value={baseRateRaw}
-              onChange={(e) => setBaseRateRaw(e.target.value)}
-              onBlur={() => handleBlur('base_rate')}
-              className={readOnly ? readOnlyInput : cls('base_rate')}
-              placeholder="0.0000"
-              readOnly={readOnly}
-              tabIndex={readOnly ? -1 : undefined}
-              aria-invalid={!!errMsg('base_rate')}
-            />
-            {errMsg('base_rate') && (
-              <p className="text-xs text-status-error mt-1" role="alert">{errMsg('base_rate')}</p>
-            )}
-          </div>
+          {/* Base Rate + Markup Rate — side by side */}
+          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="tx-base-rate" className="block text-sm font-medium text-foreground mb-1">
+                {activeTab === 'buy' ? 'TC Base (MXP por USD)' : 'TC Base (USD por MXP)'}
+              </label>
+              <input
+                id="tx-base-rate"
+                type="number"
+                inputMode="decimal"
+                step="0.0001"
+                min="0.0001"
+                value={baseRateRaw}
+                onChange={(e) => setBaseRateRaw(e.target.value)}
+                onBlur={() => handleBlur('base_rate')}
+                className={readOnly ? readOnlyInput : cls('base_rate')}
+                placeholder="0.0000"
+                readOnly={readOnly}
+                tabIndex={readOnly ? -1 : undefined}
+                aria-invalid={!!errMsg('base_rate')}
+              />
+              {errMsg('base_rate') && (
+                <p className="text-xs text-status-error mt-1" role="alert">{errMsg('base_rate')}</p>
+              )}
+            </div>
 
-          {/* Markup Rate */}
-          <div>
-            <label htmlFor="tx-markup-rate" className="block text-sm font-medium text-foreground mb-1">
-              TC Markup
-            </label>
-            <input
-              id="tx-markup-rate"
-              type="number"
-              inputMode="decimal"
-              step="0.0001"
-              min="0.0001"
-              value={markupRateRaw}
-              onChange={(e) => setMarkupRateRaw(e.target.value)}
-              onBlur={() => handleBlur('markup_rate')}
-              className={readOnly ? readOnlyInput : cls('markup_rate')}
-              placeholder="0.0000"
-              readOnly={readOnly}
-              tabIndex={readOnly ? -1 : undefined}
-              aria-invalid={!!errMsg('markup_rate')}
-            />
-            {errMsg('markup_rate') && (
-              <p className="text-xs text-status-error mt-1" role="alert">{errMsg('markup_rate')}</p>
-            )}
+            <div>
+              <label htmlFor="tx-markup-rate" className="block text-sm font-medium text-foreground mb-1">
+                {activeTab === 'buy' ? 'TC Markup (MXP por USD)' : 'TC Markup (USD por MXP)'}
+              </label>
+              <input
+                id="tx-markup-rate"
+                type="number"
+                inputMode="decimal"
+                step="0.0001"
+                min="0.0001"
+                value={markupRateRaw}
+                onChange={(e) => setMarkupRateRaw(e.target.value)}
+                onBlur={() => handleBlur('markup_rate')}
+                className={readOnly ? readOnlyInput : cls('markup_rate')}
+                placeholder="0.0000"
+                readOnly={readOnly}
+                tabIndex={readOnly ? -1 : undefined}
+                aria-invalid={!!errMsg('markup_rate')}
+              />
+              {errMsg('markup_rate') && (
+                <p className="text-xs text-status-error mt-1" role="alert">{errMsg('markup_rate')}</p>
+              )}
+            </div>
           </div>
 
           {/* Markup Diff chip */}
@@ -463,7 +491,7 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
           </div>
 
           {/* Payment account selector + CLABE + Banco */}
-          {selectedCompany && accounts.length > 0 && (
+          {selectedCompany && filteredAccounts.length > 0 && (
             <>
               <div className="md:col-span-2">
                 <label htmlFor="tx-account" className="block text-sm font-medium text-foreground mb-1">
@@ -479,7 +507,7 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
                   aria-invalid={!!errMsg('payment_account')}
                 >
                   <option value="">Seleccionar cuenta...</option>
-                  {accounts.map((acc) => (
+                  {filteredAccounts.map((acc) => (
                     <option key={acc.id} value={acc.id}>
                       {acc.bank_name ? `${acc.bank_name} — ` : ''}{maskClabe(acc.clabe)}
                       {acc.is_primary ? ' (Principal)' : ''}
@@ -493,7 +521,7 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
 
               {/* Read-only CLABE + Banco for selected account */}
               {(() => {
-                const selected = accounts.find((a) => a.id === paymentAccountId);
+                const selected = filteredAccounts.find((a) => a.id === paymentAccountId);
                 if (!selected) return null;
                 return (
                   <>
@@ -523,18 +551,24 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
             </>
           )}
 
+          {/* No accounts warning */}
+          {selectedCompany && filteredAccounts.length === 0 && (
+            <div className="md:col-span-2 rounded-lg border border-status-error/30 bg-status-error/5 p-3 text-sm text-status-error">
+              No hay cuentas de pago en {activeTab === 'buy' ? 'MXP' : 'USD'} registradas para esta empresa. Agregue una cuenta en la sección de edición de empresa.
+            </div>
+          )}
+
           {/* Pays — currency auto-selected + calculated display */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
-              Xending Paga
+              {activeTab === 'buy' ? 'Paga (MXN)' : 'Recibe (MXN)'}
             </label>
             <div className="flex gap-2">
               <select
-                value={paysCurrency}
+                value="MXN"
                 disabled
                 className={`${readOnlyInput} w-24`}
               >
-                <option value="USD">USD</option>
                 <option value="MXN">MXN</option>
               </select>
               <input
@@ -543,11 +577,13 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
                 readOnly
                 className={readOnlyInput}
                 tabIndex={-1}
-                aria-label={`Monto calculado en ${paysCurrency}`}
+                aria-label="Monto calculado en MXN"
               />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Calculado: Compra × TC Markup
+              {activeTab === 'buy'
+                ? 'Calculado: Compra (USD) × TC Markup (MXP por USD)'
+                : 'Calculado: Vende (USD) × TC Markup (USD por MXP)'}
             </p>
           </div>
         </div>
