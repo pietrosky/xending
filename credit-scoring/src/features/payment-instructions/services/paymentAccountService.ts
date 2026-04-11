@@ -64,6 +64,23 @@ export async function createPaymentAccount(
 }
 
 /**
+ * Fetches a single payment account by ID.
+ */
+export async function getPaymentAccountById(id: string): Promise<PaymentInstructionAccount | null> {
+  const { data, error } = await supabase
+    .from('pi_accounts')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw new Error(`Error al obtener cuenta: ${error.message}`);
+  }
+  return data as unknown as PaymentInstructionAccount;
+}
+
+/**
  * Disables a payment account by setting is_active to false
  * and recording disabled_at / disabled_by.
  */

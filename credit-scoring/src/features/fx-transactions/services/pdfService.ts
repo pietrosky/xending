@@ -12,6 +12,7 @@
 
 import type { FXTransaction } from '../types/transaction.types';
 import type { CompanyFX, PaymentAccount } from '../types/company-fx.types';
+import type { PaymentInstructionAccount } from '../../payment-instructions/types/payment-instruction.types';
 import type { CompanyAddress } from '../../onboarding/types/company.types';
 import logoUrl from '../../../assets/logoxending.png';
 import { invertRate } from '../utils/fxConversion';
@@ -82,7 +83,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 
 .fee-text { font-size: 9px; color: #64748b; }
 .total-row { display: flex; justify-content: flex-end; align-items: center; background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%); color: white; padding: 10px 15px; font-weight: 700; font-size: 12px; }
 .total-label { margin-right: 15px; }
-.payment-banner { background: linear-gradient(135deg, #475569 0%, #334155 100%); color: white; padding: 8px 15px; font-weight: 700; font-size: 12px; margin-bottom: 10px; border-radius: 6px; text-align: center; text-transform: uppercase; }
+.payment-banner { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 8px 15px; font-weight: 700; font-size: 12px; margin-bottom: 10px; border-radius: 6px; text-align: center; text-transform: uppercase; }
 .payment-section { display: flex; gap: 20px; margin-bottom: 20px; }
 .payment-block { flex: 1; }
 .payment-header { font-weight: 700; font-size: 11px; margin-bottom: 8px; border-bottom: 2px solid #00d4aa; padding-bottom: 5px; color: #1e293b; }
@@ -134,18 +135,13 @@ function buildXendingHTML(d: DealData): string {
         </div>
         <div class="transaction-row">
           <div class="col-left">${d.buyCurrency || 'USD'} ${d.buyAmount || '0.00'}</div>
-          <div class="col-center">${d.exchangeRate || '0.0000'}</div>
+          <div class="col-center" style="color: #dc2626; font-weight: 700;">${d.exchangeRate || '0.0000'}</div>
           <div class="col-right">${d.payCurrency || 'MXN'} ${d.payAmount || '0.00'}<br><span class="fee-text">${d.feeText || ''}</span></div>
         </div>
         <div class="total-row">
           <div class="total-label">Total Due (${d.payCurrency || 'MXN'}):</div>
           <div class="total-amount">${d.totalDue || '0.00'}</div>
         </div>
-      </div>
-      <div style="display: flex; gap: 20px; margin-bottom: 18px; background: #f8f9fa; padding: 12px 15px; border-radius: 8px; border-left: 4px solid #00d4aa; font-size: 11px;">
-        <div><span style="font-weight: 600; color: #475569;">TC Base (MXP):</span> <span style="color: #1e293b;">${d.baseRate || '0.0000'}</span></div>
-        <div><span style="font-weight: 600; color: #475569;">TC Markup (MXP):</span> <span style="color: #1e293b;">${d.markupRate || '0.0000'}</span></div>
-        <div><span style="font-weight: 600; color: #475569;">Utilidad:</span> <span style="color: #1e293b;">${d.utilidad || '0.0000'}</span></div>
       </div>`;
 
   // Payment details — conditional text
@@ -285,6 +281,7 @@ export function generatePaymentOrderPDFFromTemplate(
   transaction: FXTransaction,
   company: CompanyFX,
   paymentAccount: PaymentAccount,
+  piAccount?: PaymentInstructionAccount | null,
 ): void {
   // Always display rates in MXP (pesos por dólar)
   const isSell = transaction.buys_currency === 'MXN';
@@ -308,10 +305,13 @@ export function generatePaymentOrderPDFFromTemplate(
     payCurrency: transaction.pays_currency,
     payAmount: transaction.pays_mxn.toLocaleString('en-US', { minimumFractionDigits: 2 }),
     totalDue: transaction.pays_mxn.toLocaleString('en-US', { minimumFractionDigits: 2 }),
-    // Payment instructions — Xending's receiving account
-    accountNumber1: paymentAccount.clabe ? formatClabe(paymentAccount.clabe) : '',
-    accountName1: company.legal_name,
-    bankName1: paymentAccount.bank_name || '',
+    // Payment instructions — ALWAYS from PI account (pi_accounts table)
+    accountNumber1: piAccount?.account_number ?? '',
+    accountName1: piAccount?.account_name ?? '',
+    accountAddress1: piAccount?.bank_address ?? '',
+    swift1: piAccount?.swift_code ?? '',
+    bankName1: piAccount?.bank_name ?? '',
+    bankAddress1: piAccount?.bank_address ?? '',
     byOrderOf1: company.legal_name,
     // Beneficiary — where Xending sends the bought currency
     beneficiaryAccountNumber: paymentAccount.clabe ? formatClabe(paymentAccount.clabe) : '',

@@ -11,6 +11,7 @@ import { CancelTransactionModal } from '../components/CancelTransactionModal';
 import { RevertCancelModal } from '../components/RevertCancelModal';
 import { getCompanyFXById } from '../services/companyServiceFX';
 import { generatePaymentOrderPDFFromTemplate } from '../services/pdfService';
+import { getPaymentAccountById } from '../../payment-instructions/services/paymentAccountService';
 import type { FXTransactionSummary } from '../types/transaction.types';
 
 export function TransactionCatalogPage() {
@@ -30,7 +31,10 @@ export function TransactionCatalogPage() {
       if (!company) return;
       const paymentAccount = company.payment_accounts?.[0];
       if (!paymentAccount) return;
-      generatePaymentOrderPDFFromTemplate(tx, company, paymentAccount);
+      const piAccount = tx.pi_account_id
+        ? await getPaymentAccountById(tx.pi_account_id)
+        : null;
+      generatePaymentOrderPDFFromTemplate(tx, company, paymentAccount, piAccount);
     } catch { /* non-critical */ }
   }
 

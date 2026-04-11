@@ -9,18 +9,20 @@
 import { generatePaymentOrderPDFFromTemplate } from '../services/pdfService';
 import type { FXTransaction } from '../types/transaction.types';
 import type { CompanyFX, PaymentAccount } from '../types/company-fx.types';
+import type { PaymentInstructionAccount } from '../../payment-instructions/types/payment-instruction.types';
 
 export interface PaymentOrderPDFProps {
   transaction: FXTransaction;
   company: CompanyFX;
   paymentAccount: PaymentAccount;
+  piAccount?: PaymentInstructionAccount | null;
 }
 
-export function PaymentOrderPDF({ transaction, company, paymentAccount }: PaymentOrderPDFProps) {
+export function PaymentOrderPDF({ transaction, company, paymentAccount, piAccount }: PaymentOrderPDFProps) {
   const hasFolio = Boolean(transaction.folio);
 
   function handleDownload() {
-    generatePaymentOrderPDFFromTemplate(transaction, company, paymentAccount);
+    generatePaymentOrderPDFFromTemplate(transaction, company, paymentAccount, piAccount);
   }
 
   return (

@@ -175,7 +175,7 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
 
   // Payment Instructions accounts — filtered by currency based on operation tab
   const { data: piAccounts } = usePaymentAccounts();
-  const piCurrencyFilter = activeTab === 'buy' ? 'USD' : 'MXP';
+  const piCurrencyFilter = activeTab === 'buy' ? 'USD' : 'MXN';
   const filteredPiAccounts = useMemo(
     () => (piAccounts ?? []).filter((a) => a.is_active && a.currency_types.includes(piCurrencyFilter)),
     [piAccounts, piCurrencyFilter],

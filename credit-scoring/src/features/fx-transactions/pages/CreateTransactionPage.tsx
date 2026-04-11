@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { useCreateTransaction } from '../hooks/useTransactions';
 import { getCompanyFXById } from '../services/companyServiceFX';
 import { generatePaymentOrderPDFFromTemplate } from '../services/pdfService';
+import { getPaymentAccountById } from '../../payment-instructions/services/paymentAccountService';
 import { TransactionForm } from '../components/TransactionForm';
 import { formatCurrency } from '../utils/formatters';
 import type { FXTransaction } from '../types/transaction.types';
@@ -51,7 +52,10 @@ export function CreateTransactionPage() {
       if (!company) return;
       const paymentAccount = company.payment_accounts?.[0];
       if (!paymentAccount) return;
-      generatePaymentOrderPDFFromTemplate(createdTx, company, paymentAccount);
+      const piAccount = createdTx.pi_account_id
+        ? await getPaymentAccountById(createdTx.pi_account_id)
+        : null;
+      generatePaymentOrderPDFFromTemplate(createdTx, company, paymentAccount, piAccount);
     } catch {
       // PDF generation is non-critical
     }
