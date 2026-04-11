@@ -1,150 +1,93 @@
-// fx-payment-order — Supabase Edge Function
-//
-// Generates a PDF payment order using HTML templates (Monex / Xending / Generic).
-// Receives deal data via POST, renders HTML with embedded CSS, converts to PDF
-// using Deno's built-in capabilities, and returns the PDF binary.
-//
-// POST { partner: string, dealData: Record<string, unknown> }
+/**
+ * fx-payment-order — Deno Edge Function
+ *
+ * Generates a PDF payment order server-side using pdf-lib.
+ * POST { transaction_id: string } → application/pdf binary
+ */
 
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { TemplateService } from './templateService.ts';
+import { buildPaymentOrderPDF } from './pdfBuilder.ts';
+import type { PdfDealData } from './pdfBuilder.ts';
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const CORS_HEADERS: Record<string, string> = {
+const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+const PG_URL = Deno.env.get('SUPABASE_URL') || 'http://rest:3000';
+const SVC_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const PG_HEADERS = { 'Authorization': `Bearer ${SVC_KEY}`, 'Accept': 'application/vnd.pgrst.object+json' };
 
-interface PaymentOrderRequest {
-  partner: string;
-  dealData: Record<string, unknown>;
+function errJson(msg: string, status: number) {
+  return new Response(JSON.stringify({ error: msg }), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
 }
 
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
-
-function jsonResponse(body: unknown, status: number): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-  });
+function fmtDate(s: string) { return new Date(s).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }); }
+function fmtNum(n: number) { return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtClabe(c: string) { const d = c.replace(/\D/g, '').slice(0, 18); return d.length < 18 ? d : `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6,17)}-${d.slice(17)}`; }
+function fmtAddr(a: Record<string, string> | null) {
+  if (!a) return '';
+  return [a.street, a.city, a.state, a.zip, a.country].filter(Boolean).join('\n');
 }
 
-function pdfResponse(pdfBytes: Uint8Array, filename: string): Response {
-  return new Response(pdfBytes, {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      ...CORS_HEADERS,
-    },
-  });
+// deno-lint-ignore no-explicit-any
+async function pg(table: string, filter: string): Promise<any> {
+  const r = await fetch(`${PG_URL}/${table}?${filter}&limit=1`, { headers: PG_HEADERS });
+  if (!r.ok) throw new Error(`PG ${table}: ${r.status} ${await r.text()}`);
+  return r.json();
 }
 
-function htmlResponse(html: string): Response {
-  return new Response(html, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      ...CORS_HEADERS,
-    },
-  });
+async function loadData(txId: string) {
+  const tx = await pg('fx_transactions', `id=eq.${txId}`);
+  if (!tx?.id) throw new Error('Transaction not found');
+  const co = await pg('cs_companies', `id=eq.${tx.company_id}`);
+  if (!co?.id) throw new Error('Company not found');
+  let pi = null;
+  if (tx.pi_account_id) { try { pi = await pg('pi_accounts', `id=eq.${tx.pi_account_id}`); } catch { /* ok */ } }
+  let pa = null;
+  if (tx.payment_account_id) { try { pa = await pg('cs_company_payment_accounts', `id=eq.${tx.payment_account_id}`); } catch { /* ok */ } }
+  return { tx, co, pi, pa };
 }
 
-function getSupabaseClient(): SupabaseClient {
-  const url = Deno.env.get('SUPABASE_URL');
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!url || !serviceKey) {
-    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars');
-  }
-  return createClient(url, serviceKey);
+// deno-lint-ignore no-explicit-any
+function toDeal(tx: any, co: any, pi: any, pa: any): PdfDealData {
+  const isSell = tx.buys_currency === 'MXN';
+  const rate = Number(tx.exchange_rate) || 0;
+  const dRate = isSell && rate > 0 ? 1 / rate : rate;
+  return {
+    dealNumber: tx.folio ?? '', clientName: co.legal_name ?? '',
+    clientAddress: fmtAddr(co.address), tradeDate: fmtDate(tx.created_at ?? ''),
+    dealType: 'Spot', buyCurrency: tx.buys_currency ?? 'USD',
+    buyAmount: fmtNum(Number(tx.buys_usd) || 0), exchangeRate: dRate.toFixed(4),
+    payCurrency: tx.pays_currency ?? 'MXN',
+    payAmount: fmtNum(Number(tx.pays_mxn) || 0), totalDue: fmtNum(Number(tx.pays_mxn) || 0),
+    accountNumber1: pi?.account_number ?? '', accountName1: pi?.account_name ?? '',
+    accountAddress1: pi?.bank_address ?? '', swift1: pi?.swift_code ?? '',
+    bankName1: pi?.bank_name ?? '', bankAddress1: pi?.bank_address ?? '',
+    byOrderOf1: co.legal_name ?? '',
+    beneficiaryAccountNumber: pa?.clabe ? fmtClabe(pa.clabe) : '',
+    beneficiaryAccountName: co.legal_name ?? '',
+    beneficiaryBankName: pa?.bank_name ?? '', beneficiaryBankAddress: '',
+  };
 }
-
-async function validateAuth(req: Request): Promise<boolean> {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) return false;
-
-  try {
-    const sb = getSupabaseClient();
-    const token = authHeader.replace('Bearer ', '');
-    const { data, error } = await sb.auth.getUser(token);
-    return !error && !!data?.user;
-  } catch {
-    return false;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Request handler
-// ---------------------------------------------------------------------------
-
-async function handleRequest(body: PaymentOrderRequest): Promise<Response> {
-  const { partner, dealData } = body;
-
-  // Validate partner
-  if (!partner || !TemplateService.isValidPartner(partner)) {
-    const available = TemplateService.getAvailablePartners().join(', ');
-    return jsonResponse(
-      { error: `Invalid partner: "${partner}". Available: ${available}` },
-      400,
-    );
-  }
-
-  // Generate HTML
-  const html = TemplateService.generateHTML(partner, dealData);
-
-  // Return HTML with instructions for client-side PDF conversion
-  // The client will use this HTML to generate the PDF via html2canvas/jsPDF
-  // or render it in an iframe for printing
-  return htmlResponse(html);
-}
-
-// ---------------------------------------------------------------------------
-// Deno.serve entry point
-// ---------------------------------------------------------------------------
 
 Deno.serve(async (req: Request): Promise<Response> => {
-  // CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-  }
-
-  if (req.method !== 'POST') {
-    return jsonResponse({ error: 'Method not allowed' }, 405);
-  }
-
-  // Auth validation (skip in local dev if no auth header)
-  const authHeader = req.headers.get('Authorization');
-  if (authHeader) {
-    const isValid = await validateAuth(req);
-    if (!isValid) {
-      return jsonResponse({ error: 'Unauthorized' }, 401);
-    }
-  }
-
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  if (req.method !== 'POST') return errJson('Method not allowed', 405);
   try {
-    const body = (await req.json()) as PaymentOrderRequest;
-
-    if (!body.partner) {
-      return jsonResponse({ error: 'Missing required field: partner' }, 400);
-    }
-    if (!body.dealData) {
-      return jsonResponse({ error: 'Missing required field: dealData' }, 400);
-    }
-
-    return await handleRequest(body);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Internal server error';
-    console.error('[fx-payment-order] Error:', message);
-    return jsonResponse({ error: message }, 500);
+    const { transaction_id } = await req.json();
+    if (!transaction_id) return errJson('Missing transaction_id', 400);
+    const { tx, co, pi, pa } = await loadData(transaction_id);
+    const deal = toDeal(tx, co, pi, pa);
+    const pdf = await buildPaymentOrderPDF(deal);
+    return new Response(pdf, { status: 200, headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${deal.dealNumber || 'order'}.pdf"`,
+      ...CORS,
+    }});
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Internal error';
+    console.error('[fx-payment-order]', msg);
+    return errJson(msg, 500);
   }
 });
