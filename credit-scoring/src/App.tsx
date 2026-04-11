@@ -22,6 +22,7 @@ import { TransactionCatalogPage } from './features/fx-transactions/pages/Transac
 import { CreateTransactionPage } from './features/fx-transactions/pages/CreateTransactionPage';
 import { EditTransactionPage } from './features/fx-transactions/pages/EditTransactionPage';
 import { BrokerRedirect } from './features/auth/BrokerRedirect';
+import { PaymentInstructionsPage } from './features/payment-instructions/pages/PaymentInstructionsPage';
 
 export function App() {
   return (
@@ -59,6 +60,9 @@ export function App() {
           <Route path="fx/transactions" element={<TransactionCatalogPage />} />
           <Route path="fx/transactions/new" element={<CreateTransactionPage />} />
           <Route path="fx/transactions/:id/edit" element={<EditTransactionPage />} />
+
+          {/* Payment Instructions — both roles */}
+          <Route path="payment-instructions" element={<PaymentInstructionsPage />} />
         </Route>
       </Route>
 

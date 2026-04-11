@@ -12,6 +12,7 @@ import {
   Building2,
   ArrowLeftRight,
   Landmark,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/lib/authStore';
@@ -29,6 +30,7 @@ const NAV_ITEMS: Array<{ to: string; label: string; icon: typeof LayoutDashboard
   { to: '/applications', label: 'Solicitudes', icon: Settings, end: false, roles: ['admin'] },
   { to: '/fx/companies', label: 'Empresas FX', icon: Landmark, end: false },
   { to: '/fx/transactions', label: 'Transacciones FX', icon: ArrowLeftRight, end: false },
+  { to: '/payment-instructions', label: 'Payment Instructions', icon: CreditCard, end: false },
 ];
 
 export function CreditScoringLayout() {

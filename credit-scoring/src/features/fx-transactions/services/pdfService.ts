@@ -13,6 +13,7 @@
 import type { FXTransaction } from '../types/transaction.types';
 import type { CompanyFX, PaymentAccount } from '../types/company-fx.types';
 import type { CompanyAddress } from '../../onboarding/types/company.types';
+import logoUrl from '../../../assets/logoxending.png';
 import { invertRate } from '../utils/fxConversion';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -96,52 +97,10 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 
 `;
 }
 
-// ─── Logo SVG (inline, default Xending logo) ─────────────────────────
+// ─── Logo (imported asset) ────────────────────────────────────────────
 
-function generateLogoHTML(logoData?: unknown): string {
-  if (!logoData) {
-    return `<div class="xending-logo">
-      <svg width="40" height="40" viewBox="0 0 100 100" class="logo-svg">
-        <defs>
-          <radialGradient id="gradient1" cx="30%" cy="30%">
-            <stop offset="0%" style="stop-color:#00ffff;stop-opacity:1" />
-            <stop offset="40%" style="stop-color:#00d4aa;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#008b8b;stop-opacity:1" />
-          </radialGradient>
-          <radialGradient id="gradient2" cx="70%" cy="70%">
-            <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:1" />
-            <stop offset="40%" style="stop-color:#ff8c42;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#cc4125;stop-opacity:1" />
-          </radialGradient>
-        </defs>
-        <path d="M 50 10 A 40 40 0 0 1 85.36 35.36 L 71.21 28.79 A 25 25 0 0 0 50 25 Z" fill="url(#gradient1)" />
-        <path d="M 85.36 35.36 A 40 40 0 0 1 85.36 64.64 L 71.21 71.21 A 25 25 0 0 0 71.21 28.79 Z" fill="url(#gradient1)" />
-        <path d="M 85.36 64.64 A 40 40 0 0 1 50 90 L 50 75 A 25 25 0 0 0 71.21 71.21 Z" fill="url(#gradient2)" />
-        <path d="M 50 90 A 40 40 0 0 1 14.64 64.64 L 28.79 71.21 A 25 25 0 0 0 50 75 Z" fill="url(#gradient2)" />
-        <path d="M 14.64 64.64 A 40 40 0 0 1 14.64 35.36 L 28.79 28.79 A 25 25 0 0 0 28.79 71.21 Z" fill="url(#gradient2)" />
-        <path d="M 14.64 35.36 A 40 40 0 0 1 50 10 L 50 25 A 25 25 0 0 0 28.79 28.79 Z" fill="url(#gradient1)" />
-      </svg>
-      <span class="logo-text">Xending Global</span>
-    </div>`;
-  }
-
-  // base64 string
-  if (typeof logoData === 'string' && logoData.startsWith('data:image/')) {
-    return `<div class="custom-logo"><img src="${logoData}" alt="Logo" class="logo-image" /></div>`;
-  }
-
-  // object with src
-  if (typeof logoData === 'object' && logoData !== null) {
-    const { src, text, width = '40px', height = '40px' } = logoData as Record<string, string>;
-    if (src) {
-      return `<div class="custom-logo">
-        <img src="${src}" alt="Logo" class="logo-image" style="width: ${width}; height: ${height};" />
-        ${text ? `<span class="logo-text">${text}</span>` : ''}
-      </div>`;
-    }
-  }
-
-  return generateLogoHTML(undefined);
+function generateLogoHTML(): string {
+  return `<div class="custom-logo"><img src="${logoUrl}" alt="Xending Logo" class="logo-image" /></div>`;
 }
 
 // ─── Xending HTML Template (full version) ────────────────────────────
@@ -229,7 +188,7 @@ function buildXendingHTML(d: DealData): string {
 <style>${getXendingCSS()}</style></head><body><div class="container">
 <!-- Header -->
 <div class="header">
-  <div class="logo-section"><div class="logo">${generateLogoHTML(d.logo)}</div></div>
+  <div class="logo-section"><div class="logo">${generateLogoHTML()}</div></div>
   <div class="header-text">
     <p><strong>Xending Global Payments</strong></p>
     <p>Your trusted partner for international</p>

@@ -18,6 +18,7 @@ import { deriveTabFromCurrency, getCurrenciesForTab, transformRatesForSubmit } f
 import { getCompanyFXById } from '../services/companyServiceFX';
 import { formatCurrency } from '../utils/formatters';
 import { maskClabe } from '../../credit-scoring/utils/inputMasks';
+import { usePaymentAccounts } from '../../payment-instructions/hooks/usePaymentInstructions';
 import type { CompanyFX } from '../types/company-fx.types';
 import type { CreateTransactionInput, FXTransaction, FXCurrency } from '../types/transaction.types';
 
@@ -68,6 +69,7 @@ interface FieldErrors {
   base_rate?: string;
   markup_rate?: string;
   payment_account?: string;
+  pi_account?: string;
 }
 
 function validate(
@@ -76,8 +78,10 @@ function validate(
   baseRateRaw: string,
   markupRateRaw: string,
   paymentAccountId: string,
+  piAccountId: string,
   activeTab: OperationTab = 'buy',
   hasFilteredAccounts: boolean = true,
+  hasFilteredPiAccounts: boolean = true,
 ): FieldErrors {
   const errors: FieldErrors = {};
 
@@ -111,6 +115,15 @@ function validate(
     errors.payment_account = `No hay cuentas de pago en ${currencyLabel} registradas para esta empresa`;
   } else if (company && !paymentAccountId) {
     errors.payment_account = 'Debe seleccionar una cuenta de pago';
+  }
+
+  if (!piAccountId) {
+    const piCurrency = activeTab === 'buy' ? 'USD' : 'MXP';
+    if (!hasFilteredPiAccounts) {
+      errors.pi_account = `No hay cuentas de Payment Instructions en ${piCurrency} disponibles`;
+    } else {
+      errors.pi_account = 'Debe seleccionar una cuenta de Payment Instructions';
+    }
   }
 
   return errors;
@@ -150,6 +163,7 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
   const [baseRateRaw, setBaseRateRaw] = useState(initialData ? String(initialData.base_rate) : '');
   const [markupRateRaw, setMarkupRateRaw] = useState(initialData ? String(initialData.markup_rate) : '');
   const [paymentAccountId, setPaymentAccountId] = useState(initialData?.payment_account_id ?? '');
+  const [piAccountId, setPiAccountId] = useState(initialData?.pi_account_id ?? '');
   const [buysCurrency, setBuysCurrency] = useState<FXCurrency>(initialData?.buys_currency ?? 'USD');
   const [paysCurrency, setPaysCurrency] = useState<FXCurrency>(initialData?.pays_currency ?? 'MXN');
   const [activeTab, setActiveTab] = useState<OperationTab>(
@@ -158,6 +172,14 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const isEdit = mode === 'edit';
+
+  // Payment Instructions accounts — filtered by currency based on operation tab
+  const { data: piAccounts } = usePaymentAccounts();
+  const piCurrencyFilter = activeTab === 'buy' ? 'USD' : 'MXP';
+  const filteredPiAccounts = useMemo(
+    () => (piAccounts ?? []).filter((a) => a.is_active && a.currency_types.includes(piCurrencyFilter)),
+    [piAccounts, piCurrencyFilter],
+  );
 
   // Pre-populate company in edit mode
   useEffect(() => {
@@ -194,7 +216,14 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
     }
   }, [filteredAccounts.length, filteredAccounts[0]?.id, paymentAccountId]);
 
-  const errors = validate(selectedCompany, buysRaw, baseRateRaw, markupRateRaw, paymentAccountId, activeTab, filteredAccounts.length > 0);
+  // Auto-select PI account when only one matches the currency filter
+  useEffect(() => {
+    if (filteredPiAccounts.length === 1 && piAccountId !== filteredPiAccounts[0]!.id) {
+      setPiAccountId(filteredPiAccounts[0]!.id);
+    }
+  }, [filteredPiAccounts.length, filteredPiAccounts[0]?.id, piAccountId]);
+
+  const errors = validate(selectedCompany, buysRaw, baseRateRaw, markupRateRaw, paymentAccountId, piAccountId, activeTab, filteredAccounts.length > 0, filteredPiAccounts.length > 0);
 
   // Markup difference and chip
   const baseRate = parseFloat(baseRateRaw) || 0;
@@ -223,6 +252,7 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
     setBuysCurrency(buys);
     setPaysCurrency(pays);
     setPaymentAccountId('');
+    setPiAccountId('');
   }
 
   function handleCompanySelect(company: CompanyFX) {
@@ -240,7 +270,7 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
     e.preventDefault();
 
     const allTouched: Record<string, boolean> = {};
-    for (const f of ['company', 'buys_usd', 'base_rate', 'markup_rate', 'payment_account']) {
+    for (const f of ['company', 'buys_usd', 'base_rate', 'markup_rate', 'payment_account', 'pi_account']) {
       allTouched[f] = true;
     }
     setTouched(allTouched);
@@ -258,6 +288,7 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
     onSubmit({
       company_id: selectedCompany!.id,
       payment_account_id: paymentAccountId,
+      pi_account_id: piAccountId,
       buys_currency: buysCurrency,
       buys_usd: parseFloat(buysRaw),
       base_rate: transformed.base_rate,
@@ -586,6 +617,109 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
                 : 'Calculado: Vende (USD) × TC Markup (USD por MXP)'}
             </p>
           </div>
+        </div>
+      </fieldset>
+
+      {/* ─── Payment Instructions selector ────────────────────────── */}
+      <fieldset className="space-y-4">
+        <legend className="text-sm font-semibold text-foreground">Payment Instructions</legend>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredPiAccounts.length > 0 ? (
+            <>
+              <div className="md:col-span-2">
+                <label htmlFor="tx-pi-account" className="block text-sm font-medium text-foreground mb-1">
+                  Cuenta de Depósito (Xending) — {piCurrencyFilter}
+                </label>
+                <select
+                  id="tx-pi-account"
+                  value={piAccountId}
+                  onChange={(e) => setPiAccountId(e.target.value)}
+                  onBlur={() => handleBlur('pi_account')}
+                  className={readOnly ? readOnlyInput : cls('pi_account')}
+                  disabled={readOnly}
+                  aria-invalid={!!errMsg('pi_account')}
+                >
+                  <option value="">Seleccionar cuenta...</option>
+                  {filteredPiAccounts.map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.bank_name} — {acc.account_name} ({acc.currency_types.join(', ')})
+                    </option>
+                  ))}
+                </select>
+                {errMsg('pi_account') && (
+                  <p className="text-xs text-status-error mt-1" role="alert">{errMsg('pi_account')}</p>
+                )}
+              </div>
+
+              {/* Read-only details for selected PI account */}
+              {(() => {
+                const selected = filteredPiAccounts.find((a) => a.id === piAccountId);
+                if (!selected) return null;
+                return (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">Account Number</label>
+                      <input
+                        type="text"
+                        value={selected.account_number}
+                        readOnly
+                        className={readOnlyInput}
+                        tabIndex={-1}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">Bank Name</label>
+                      <input
+                        type="text"
+                        value={selected.bank_name}
+                        readOnly
+                        className={readOnlyInput}
+                        tabIndex={-1}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">SWIFT Code</label>
+                      <input
+                        type="text"
+                        value={selected.swift_code ?? '—'}
+                        readOnly
+                        className={readOnlyInput}
+                        tabIndex={-1}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">Bank Address</label>
+                      <input
+                        type="text"
+                        value={selected.bank_address}
+                        readOnly
+                        className={readOnlyInput}
+                        tabIndex={-1}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">Moneda</label>
+                      <div className="flex flex-wrap gap-1 py-2">
+                        {selected.currency_types.map((currency) => (
+                          <span
+                            key={currency}
+                            className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700"
+                          >
+                            {currency}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </>
+          ) : (
+            <div className="md:col-span-2 rounded-lg border border-status-error/30 bg-status-error/5 p-3 text-sm text-status-error">
+              No hay cuentas de Payment Instructions en {piCurrencyFilter} disponibles. Agregue una cuenta en la sección de Payment Instructions.
+            </div>
+          )}
         </div>
       </fieldset>
 

@@ -14,6 +14,7 @@ export interface FXTransaction {
   pays_mxn: number;
   status: TransactionStatus;
   payment_account_id: string | null;
+  pi_account_id: string | null;
   created_by: string;
   authorized_by: string | null;
   authorized_at: string | null;
@@ -35,6 +36,7 @@ export interface FXTransactionSummary extends FXTransaction {
 export interface CreateTransactionInput {
   company_id: string;
   payment_account_id: string;
+  pi_account_id: string;
   buys_currency: FXCurrency;
   buys_usd: number;
   base_rate: number;
