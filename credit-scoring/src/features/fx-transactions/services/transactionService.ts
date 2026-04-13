@@ -345,9 +345,9 @@ export async function revertCancelTransaction(transactionId: string): Promise<FX
 
 /**
  * Clasifica transacciones en tres grupos según su estado y proof_url.
- * - "No Autorizadas": status = 'pending'
- * - "Autorizadas sin Comprobante": status = 'authorized', proof_url nulo
- * - "Historial": status = 'completed'
+ * - "No Autorizadas": status = 'pending', no cancelada
+ * - "Autorizadas sin Comprobante": status = 'authorized', no cancelada
+ * - "Historial": status = 'completed' OR cancelada (cualquier status)
  *
  * Req 9.1
  */
@@ -359,6 +359,10 @@ export function groupTransactionsByStatus(
   const historial: FXTransactionSummary[] = [];
 
   for (const tx of transactions) {
+    if (tx.cancelled) {
+      historial.push(tx);
+      continue;
+    }
     switch (tx.status) {
       case 'pending':
         noAutorizadas.push(tx);
