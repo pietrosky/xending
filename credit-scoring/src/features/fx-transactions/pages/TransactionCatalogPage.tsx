@@ -34,7 +34,7 @@ export function TransactionCatalogPage() {
       const piAccount = tx.pi_account_id
         ? await getPaymentAccountById(tx.pi_account_id)
         : null;
-      generatePaymentOrderPDFFromTemplate(tx, company, paymentAccount, piAccount);
+      await generatePaymentOrderPDFFromTemplate(tx, company, paymentAccount, piAccount);
     } catch { /* non-critical */ }
   }
 

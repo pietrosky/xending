@@ -6,7 +6,7 @@ const cssCache = new Map();
 
 class TemplateService {
   static getAvailablePartners() {
-    return ['monex', 'xending', 'xending-compact', 'generic']; // Add more partners as needed
+    return ['monex', 'xending', 'generic']; // Add more partners as needed
   }
 
   static isValidPartner(partner) {
@@ -21,8 +21,6 @@ class TemplateService {
         return this.generateMonexHTML(dealData);
       case 'xending':
         return this.generateXendingHTML(dealData);
-      case 'xending-compact':
-        return this.generateXendingCompactHTML(dealData);
       case 'generic':
         return this.generateGenericHTML(dealData);
       default:
@@ -62,16 +60,6 @@ class TemplateService {
             right: '12mm',
             bottom: '12mm',
             left: '12mm'
-          }
-        };
-      case 'xending-compact':
-        return {
-          ...baseOptions,
-          margin: {
-            top: '8mm',
-            right: '8mm',
-            bottom: '8mm',
-            left: '8mm'
           }
         };
       default:
@@ -134,6 +122,9 @@ class TemplateService {
               <div class="field-row">
                 <span class="label">Client:</span>
                 <span class="value">${dealData.clientName || 'EDGAR EL PANA DEL RITMO SA DE CV'}</span>
+              </div>
+              <div class="address">
+                ${dealData.clientAddress || 'EL ZAR 3344<br>SAN NICOLAS DE LOS<br>GARZA,NUEVO LEON,Mexico'}
               </div>
               <div class="field-row">
                 <span class="label">Booked By:</span>
@@ -308,14 +299,19 @@ class TemplateService {
               <p>foreign exchange transactions</p>
               <p>Please review this confirmation carefully</p>
             </div>
+            <div class="qr-section">
+              <div class="qr-code">
+                <div class="qr-placeholder">QR</div>
+              </div>
+            </div>
           </div>
 
           <!-- Deal header info -->
           <div class="deal-header">
             <div class="deal-number">Deal No. ${dealData.dealNumber || 'XG-SPOT-001'}</div>
             <div class="contact-info">
-              <span>www.xendinglobal.com</span>
-              <span>T: 8119124842</span>
+              <span>www.xendingglobal.com</span>
+              <span>T: +52 55.1234.5678</span>
               <span>E: deals@xendingglobal.com</span>
             </div>
           </div>
@@ -332,11 +328,14 @@ class TemplateService {
                 <span class="label">Client:</span>
                 <span class="value">${dealData.clientName || 'IMPORTADORA MEXICANA SA DE CV'}</span>
               </div>
+              <div class="address">
+                ${dealData.clientAddress || 'AV. REFORMA 456<br>COL. JUAREZ, CDMX 06600<br>MEXICO'}
+              </div>
             </div>
             <div class="right-column">
               <div class="field-row">
                 <span class="label">Trade Date:</span>
-                <span class="value">${dealData.tradeDate || '29/12/2025'}</span>
+                <span class="value">${dealData.tradeDate || '29/09/2025'}</span>
               </div>
               <div class="field-row">
                 <span class="label">Deal Type:</span>
@@ -379,7 +378,7 @@ class TemplateService {
             <div class="transaction-row">
               <div class="col-left">${dealData.buyCurrency || 'USD'} ${dealData.buyAmount || '100,000.00'}</div>
               <div class="col-center">${dealData.exchangeRate || '17.8500'}</div>
-              <div class="col-right">${dealData.payCurrency || 'MXN'} ${dealData.payAmount || '1,785,000.00'}<br><span class="fee-text">${dealData.feeText || 'MXN 0.00 (Xending Fee)'}</span></div>
+              <div class="col-right">${dealData.payCurrency || 'MXN'} ${dealData.payAmount || '1,785,000.00'}<br><span class="fee-text">${dealData.feeText || 'MXN 2,500.00 (Xending Fee)'}</span></div>
             </div>
             <div class="total-row">
               <div class="total-label">Total Due (${dealData.payCurrency || 'MXN'}):</div>
@@ -400,11 +399,11 @@ class TemplateService {
                 ${dealData.withoutExchangeRate ? `
                 <p>to pay <strong>Xending Capital</strong></p>
                 <p>by Electronic Wire transfer</p>
-                <p>on <strong>${dealData.tradeDate || '29/12/2025'}</strong> to:</p>
+                <p>on <strong>${dealData.tradeDate || '29/09/2025'}</strong> to:</p>
                 ` : `
                 <p>to pay <strong>Xending Capital ${dealData.payCurrency || 'MXN'}</strong></p>
                 <p><strong>${dealData.totalDue || '1,787,500.00'}</strong> by Electronic Wire</p>
-                <p>transfer on <strong>${dealData.tradeDate || '29/12/2025'}</strong> to:</p>
+                <p>transfer on <strong>${dealData.tradeDate || '29/09/2025'}</strong> to:</p>
                 `}
                 <br>
                 <p>Payment must be received for</p>
@@ -503,224 +502,6 @@ class TemplateService {
               <strong style="color: #2c3e50;">Important Notice:</strong><br>
               Xending is a technology services provider, not a bank.<br>
               Xending is powered by Conduit.
-            </p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  static generateXendingCompactHTML(dealData) {
-    // Cargar logo de Xending automáticamente si no se proporciona
-    if (!dealData.logo) {
-      const LogoHelper = require('../utils/LogoHelper');
-      dealData.logo = LogoHelper.createLogoObject('./src/utils/Xending.png', {
-        text: 'Xending Capital',
-        width: '50px',
-        height: '50px'
-      });
-    }
-    
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Xending Capital - Deal Confirmation (Compact)</title>
-        <style>
-          ${this.loadCSS('xending-compact')}
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <!-- Header Compacto -->
-          <div class="header">
-            <div class="logo-section">
-              <div class="logo">
-                ${this.generateLogoHTML(dealData.logo)}
-              </div>
-            </div>
-            <div class="header-text">
-              <p><strong>Xending Capital Payments</strong></p>
-              <p>FX Deal Confirmation</p>
-            </div>
-          </div>
-
-          <!-- Deal header -->
-          <div class="deal-header">
-            <div class="deal-number">Deal No. ${dealData.dealNumber || 'XG-SPOT-001'}</div>
-            <div class="contact-info">
-              <span>www.xendinglobal.com</span>
-              <span>T: 8119124842</span>
-            </div>
-          </div>
-
-          <!-- Confirmation banner -->
-          <div class="confirmation-banner">
-            Xending Capital - DEAL CONFIRMATION
-          </div>
-
-          <!-- Client and deal info - 2 COLUMNAS -->
-          <div class="info-section">
-            <div class="left-column">
-              <div class="field-row">
-                <span class="label">Client:</span>
-                <span class="value">${dealData.clientName || 'IMPORTADORA MEXICANA SA DE CV'}</span>
-              </div>
-            </div>
-            <div class="right-column">
-              <div class="field-row">
-                <span class="label">Trade Date:</span>
-                <span class="value">${dealData.tradeDate || '29/12/2025'}</span>
-              </div>
-              <div class="field-row">
-                <span class="label">Deal Type:</span>
-                <span class="value">${dealData.dealType || 'Spot'}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Transaction details -->
-          <div class="transaction-banner">
-            TRANSACTION DETAILS
-          </div>
-
-          ${dealData.withoutExchangeRate ? `
-          <!-- Versión SIN tipo de cambio (Compact) - Mantener formato de tabla -->
-          <div class="transaction-table">
-            <div class="transaction-header">
-              <div class="col-left">${dealData.clientName || 'IMPORTADORA MEXICANA SA DE CV'}<br>Buys</div>
-              <div class="col-center">Exchange<br>Rate</div>
-              <div class="col-right">${dealData.clientName || 'IMPORTADORA MEXICANA SA DE CV'}<br>Pays</div>
-            </div>
-            <div class="transaction-row">
-              <div class="col-left">${dealData.buyCurrency || 'USD'} ${dealData.buyAmount || '100,000.00'}</div>
-              <div class="col-center">1</div>
-              <div class="col-right">${dealData.buyCurrency || 'USD'} ${dealData.buyAmount || '100,000.00'}</div>
-            </div>
-            <div class="total-row">
-              <div class="total-label">Total Due (${dealData.buyCurrency || 'USD'}):</div>
-              <div class="total-amount">${dealData.buyAmount || '100,000.00'}</div>
-            </div>
-          </div>
-          ` : `
-          <!-- Versión CON tipo de cambio (Compact) -->
-          <div class="transaction-table">
-            <div class="transaction-header">
-              <div class="col-left">${dealData.clientName || 'IMPORTADORA MEXICANA SA DE CV'}<br>Buys</div>
-              <div class="col-center">Exchange<br>Rate</div>
-              <div class="col-right">${dealData.clientName || 'IMPORTADORA MEXICANA SA DE CV'}<br>Pays</div>
-            </div>
-            <div class="transaction-row">
-              <div class="col-left">${dealData.buyCurrency || 'USD'} ${dealData.buyAmount || '100,000.00'}</div>
-              <div class="col-center">${dealData.exchangeRate || '17.8500'}</div>
-              <div class="col-right">${dealData.payCurrency || 'MXN'} ${dealData.payAmount || '1,785,000.00'}<br><span class="fee-text">${dealData.feeText || 'MXN 0.00 (Xending Fee)'}</span></div>
-            </div>
-            <div class="total-row">
-              <div class="total-label">Total Due (${dealData.payCurrency || 'MXN'}):</div>
-              <div class="total-amount">${dealData.totalDue || '1,787,500.00'}</div>
-            </div>
-          </div>
-          `}
-
-          <!-- Payment instructions - 2 COLUMNAS LADO A LADO -->
-          <div class="payment-banner">
-            PAYMENT INSTRUCTIONS
-          </div>
-
-          <div class="payment-section">
-            <div class="payment-block">
-              <div class="payment-header">${dealData.clientName || 'IMPORTADORA MEXICANA SA DE CV'}</div>
-              <div class="payment-details">
-                ${dealData.withoutExchangeRate ? `
-                <p>to pay <strong>Xending Capital</strong></p>
-                <p>by Wire transfer</p>
-                <p>on <strong>${dealData.tradeDate || '29/12/2025'}</strong></p>
-                ` : `
-                <p>to pay <strong>Xending Capital ${dealData.payCurrency || 'MXN'}</strong></p>
-                <p><strong>${dealData.totalDue || '1,787,500.00'}</strong> by Wire</p>
-                <p>on <strong>${dealData.tradeDate || '29/12/2025'}</strong></p>
-                `}
-              </div>
-            </div>
-            <div class="bank-details">
-              <div class="bank-info">
-                <div class="field-row">
-                  <span class="label">Account Number:</span>
-                  <span class="value">${dealData.accountNumber1 || 'MX98765432109876543210'}</span>
-                </div>
-                <div class="field-row">
-                  <span class="label">Account Name:</span>
-                  <span class="value">${dealData.accountName1 || 'Xending Capital Payments'}</span>
-                </div>
-                <div class="field-row">
-                  <span class="label">SWIFT:</span>
-                  <span class="value">${dealData.swift1 || 'XENDMX22'}</span>
-                </div>
-                <div class="field-row">
-                  <span class="label">Bank Name:</span>
-                  <span class="value">${dealData.bankName1 || 'Banco Xending Mexico'}</span>
-                </div>
-                <div class="field-row">
-                  <span class="label">Bank Address:</span>
-                  <span class="value">${dealData.bankAddress1 || 'Ciudad de Mexico, Mexico'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Beneficiary Section - 2 COLUMNAS LADO A LADO -->
-          ${dealData.beneficiaryAccountNumber ? `
-          <div class="beneficiary-banner">
-            BENEFICIARY - XENDING PAYS TO
-          </div>
-
-          <div class="payment-section">
-            <div class="payment-block">
-              <div class="payment-header">Xending Capital</div>
-              <div class="payment-details">
-                ${dealData.withoutExchangeRate ? `
-                <p>Amount <strong>${dealData.buyCurrency || 'USD'} ${dealData.buyAmount || '100,000.00'}</strong></p>
-                <p>by Wire transfer to:</p>
-                ` : `
-                <p>will pay <strong>${dealData.buyCurrency || 'USD'} ${dealData.buyAmount || '100,000.00'}</strong></p>
-                <p>by Wire transfer to:</p>
-                `}
-              </div>
-            </div>
-            <div class="bank-details">
-              <div class="bank-info">
-                <div class="field-row">
-                  <span class="label">Account Number:</span>
-                  <span class="value">${dealData.beneficiaryAccountNumber}</span>
-                </div>
-                <div class="field-row">
-                  <span class="label">Account Name:</span>
-                  <span class="value">${dealData.beneficiaryAccountName || ''}</span>
-                </div>
-                <div class="field-row">
-                  <span class="label">SWIFT:</span>
-                  <span class="value">${dealData.beneficiarySwift || ''}</span>
-                </div>
-                <div class="field-row">
-                  <span class="label">Bank Name:</span>
-                  <span class="value">${dealData.beneficiaryBankName || ''}</span>
-                </div>
-                <div class="field-row">
-                  <span class="label">Bank Address:</span>
-                  <span class="value">${dealData.beneficiaryBankAddress || ''}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          ` : ''}
-
-          <!-- Disclaimer Footer -->
-          <div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-top: 2px solid #e9ecef; border-radius: 6px;">
-            <p style="text-align: center; font-size: 10px; color: #6c757d; margin: 0; line-height: 1.5;">
-              <strong style="color: #2c3e50;">Important Notice:</strong><br>
-              Xending is a technology services provider, not a bank. Xending is powered by Conduit.
             </p>
           </div>
         </div>

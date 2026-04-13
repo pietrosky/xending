@@ -9,7 +9,7 @@ const LogoHelper = require('./src/utils/LogoHelper');
 
 // Convertir imagen a base64
 const xendingLogo = LogoHelper.createLogoObject('./src/utils/Xending.png', {
-    text: 'Xending Global Payments',
+    text: 'Xending Capital Payments',
     width: '60px',
     height: '60px'
 });
@@ -29,7 +29,7 @@ const LogoHelper = require('./src/utils/LogoHelper');
 
 // Crear objeto de logo con opciones
 const logoObject = LogoHelper.createLogoObject('./src/utils/Xending.png', {
-    text: 'Xending Global Payments',    // Texto junto al logo
+    text: 'Xending Capital Payments',    // Texto junto al logo
     width: '60px',         // Ancho del logo
     height: '60px'         // Alto del logo
 });
@@ -72,7 +72,7 @@ async function generarPDFConLogo() {
     
     // Opción 2: Logo con opciones
     const logoCompleto = LogoHelper.createLogoObject('./src/utils/Xending.png', {
-        text: 'Xending Global Payments',
+        text: 'Xending Capital Payments',
         width: '50px',
         height: '50px'
     });
@@ -114,14 +114,14 @@ console.log(info);
 // Output: { type: 'base64', format: 'png', hasText: false, size: 12345 }
 ```
 
-## Ejemplo Específico: Logo de Xending Global Payments
+## Ejemplo Específico: Logo de Xending Capital Payments
 
 ```javascript
 const LogoHelper = require('./src/utils/LogoHelper');
 
 // Crear logo de Xending con texto
 const xendingLogo = LogoHelper.createLogoObject('./src/utils/Xending.png', {
-    text: 'Xending Global Payments',
+    text: 'Xending Capital Payments',
     width: '60px',
     height: '60px'
 });

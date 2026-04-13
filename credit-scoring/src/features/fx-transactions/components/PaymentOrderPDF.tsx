@@ -1,11 +1,13 @@
 /**
  * PaymentOrderPDF — Botón de descarga de PDF de orden de pago.
  *
- * Genera PDF profesional con template Xending (100% client-side).
+ * Genera PDF profesional via fx-pdf-generator Node server.
+ * Fallback a print window client-side si el server no está disponible.
  *
  * Requerimientos: 6.1, 6.3
  */
 
+import { useState } from 'react';
 import { generatePaymentOrderPDFFromTemplate } from '../services/pdfService';
 import type { FXTransaction } from '../types/transaction.types';
 import type { CompanyFX, PaymentAccount } from '../types/company-fx.types';
@@ -20,19 +22,25 @@ export interface PaymentOrderPDFProps {
 
 export function PaymentOrderPDF({ transaction, company, paymentAccount, piAccount }: PaymentOrderPDFProps) {
   const hasFolio = Boolean(transaction.folio);
+  const [loading, setLoading] = useState(false);
 
-  function handleDownload() {
-    generatePaymentOrderPDFFromTemplate(transaction, company, paymentAccount, piAccount);
+  async function handleDownload() {
+    setLoading(true);
+    try {
+      await generatePaymentOrderPDFFromTemplate(transaction, company, paymentAccount, piAccount);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <button
       type="button"
       onClick={handleDownload}
-      disabled={!hasFolio}
+      disabled={!hasFolio || loading}
       className={
         'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 ' +
-        (hasFolio
+        (hasFolio && !loading
           ? 'bg-primary text-primary-foreground hover:bg-primary/90'
           : 'bg-muted text-muted-foreground cursor-not-allowed')
       }
@@ -50,7 +58,7 @@ export function PaymentOrderPDF({ transaction, company, paymentAccount, piAccoun
           clipRule="evenodd"
         />
       </svg>
-      PDF
+      {loading ? 'Generando…' : 'PDF'}
     </button>
   );
 }

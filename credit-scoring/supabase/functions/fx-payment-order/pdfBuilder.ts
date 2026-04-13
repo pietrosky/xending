@@ -86,8 +86,8 @@ export async function buildPaymentOrderPDF(d: PdfDealData): Promise<Uint8Array> 
   let y = height - 40;
 
   // Header
-  page.drawText('Xending Global', { x: mL, y, size: 16, font: fb, color: DARK_SLATE });
-  const hLines = ['Xending Global Payments', 'Your trusted partner for international', 'foreign exchange transactions'];
+  page.drawText('Xending Capital', { x: mL, y, size: 16, font: fb, color: DARK_SLATE });
+  const hLines = ['Xending Capital Payments', 'Your trusted partner for international', 'foreign exchange transactions'];
   let hY = y;
   for (const l of hLines) { const tw = fn.widthOfTextAtSize(l, 8); page.drawText(l, { x: width - mR - tw, y: hY, size: 8, font: fn, color: MID_GRAY }); hY -= 11; }
   y -= 25;
@@ -101,7 +101,7 @@ export async function buildPaymentOrderPDF(d: PdfDealData): Promise<Uint8Array> 
   y -= 10; hLine(page, mL, y, cW); y -= 15;
 
   // Confirmation banner
-  y = drawBanner(page, y, 'XENDING GLOBAL - DEAL CONFIRMATION', TEAL, fb, cW, mL);
+  y = drawBanner(page, y, 'Xending Capital - DEAL CONFIRMATION', TEAL, fb, cW, mL);
 
   // Client info box
   page.drawRectangle({ x: mL, y: y - 65, width: cW, height: 65, color: LIGHT_GRAY });
@@ -165,11 +165,11 @@ export async function buildPaymentOrderPDF(d: PdfDealData): Promise<Uint8Array> 
   page.drawText(d.clientName, { x: mL, y, size: 9, font: fb, color: DARK_BG });
   hLine(page, mL, y - 3, cW / 2 - 20, TEAL, 1.5);
   y -= 16;
-  page.drawText(`to pay Xending Global ${d.payCurrency}`, { x: mL, y, size: 8, font: fn, color: GRAY_TEXT }); y -= 12;
+  page.drawText(`to pay Xending Capital ${d.payCurrency}`, { x: mL, y, size: 8, font: fn, color: GRAY_TEXT }); y -= 12;
   page.drawText(`${d.totalDue} by Electronic Wire`, { x: mL, y, size: 8, font: fb, color: GRAY_TEXT }); y -= 12;
   page.drawText(`transfer on ${d.tradeDate} to:`, { x: mL, y, size: 8, font: fn, color: GRAY_TEXT }); y -= 16;
   page.drawText('Payment must be received for', { x: mL, y, size: 8, font: fn, color: GRAY_TEXT }); y -= 12;
-  page.drawText('Xending Global to process the currency exchange.', { x: mL, y, size: 8, font: fn, color: GRAY_TEXT });
+  page.drawText('Xending Capital to process the currency exchange.', { x: mL, y, size: 8, font: fn, color: GRAY_TEXT });
 
   // Right — PI bank details
   const bX = mL + cW / 2 + 10, bLW = 100;
@@ -185,7 +185,7 @@ export async function buildPaymentOrderPDF(d: PdfDealData): Promise<Uint8Array> 
   // Beneficiary section
   if (d.beneficiaryAccountNumber) {
     y = drawBanner(page, y, 'BENEFICIARY DETAILS - XENDING PAYS TO', BENEFICIARY_BG, fb, cW, mL);
-    page.drawText('Xending Global', { x: mL, y, size: 9, font: fb, color: DARK_BG });
+    page.drawText('Xending Capital', { x: mL, y, size: 9, font: fb, color: DARK_BG });
     hLine(page, mL, y - 3, cW / 2 - 20, TEAL, 1.5);
     y -= 16;
     page.drawText(`will pay ${d.buyCurrency} ${d.buyAmount}`, { x: mL, y, size: 8, font: fn, color: GRAY_TEXT }); y -= 12;

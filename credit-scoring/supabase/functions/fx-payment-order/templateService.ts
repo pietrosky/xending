@@ -91,7 +91,7 @@ export class TemplateService {
           <path d="M 14.64 64.64 A 40 40 0 0 1 14.64 35.36 L 28.79 28.79 A 25 25 0 0 0 28.79 71.21 Z" fill="url(#gradient2)" />
           <path d="M 14.64 35.36 A 40 40 0 0 1 50 10 L 50 25 A 25 25 0 0 0 28.79 28.79 Z" fill="url(#gradient1)" />
         </svg>
-        <span class="logo-text">Xending Global</span>
+        <span class="logo-text">Xending Capital</span>
       </div>`;
     }
 
@@ -153,9 +153,9 @@ export class TemplateService {
   <div class="right-column">
     <div class="field-row"><span class="label">Trade Date:</span><span class="value">${d.tradeDate || '28-Sep-2025'}</span></div>
     <div class="field-row"><span class="label">Deal Type:</span><span class="value">${d.dealType || 'Spot'}</span></div>
-    <div class="field-row"><span class="label">Rel Manager:</span><span class="value">${d.relManager || 'Xending Global'}</span></div>
+    <div class="field-row"><span class="label">Rel Manager:</span><span class="value">${d.relManager || 'Xending Capital'}</span></div>
     <div class="field-row"><span class="label">FX Dealer:</span><span class="value">${d.fxDealer || 'Adam Kane'}</span></div>
-    <div class="field-row"><span class="label">Processor:</span><span class="value">${d.processor || 'Xending Global'}</span></div>
+    <div class="field-row"><span class="label">Processor:</span><span class="value">${d.processor || 'Xending Capital'}</span></div>
   </div>
 </div>
 <!-- Transaction details -->
@@ -251,10 +251,10 @@ export class TemplateService {
         </div>`;
 
     const paymentDetailsText = withoutRate
-      ? `<p>to pay <strong>Xending Global</strong></p>
+      ? `<p>to pay <strong>Xending Capital</strong></p>
          <p>by Electronic Wire transfer</p>
          <p>on <strong>${d.tradeDate || '29/09/2025'}</strong> to:</p>`
-      : `<p>to pay <strong>Xending Global ${d.payCurrency || 'MXN'}</strong></p>
+      : `<p>to pay <strong>Xending Capital ${d.payCurrency || 'MXN'}</strong></p>
          <p><strong>${d.totalDue || '1,787,500.00'}</strong> by Electronic Wire</p>
          <p>transfer on <strong>${d.tradeDate || '29/09/2025'}</strong> to:</p>`;
 
@@ -262,7 +262,7 @@ export class TemplateService {
       ? `<div class="payment-banner" style="background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); margin-top: 30px;">BENEFICIARY DETAILS - XENDING PAYS TO</div>
         <div class="payment-section">
           <div class="payment-block">
-            <div class="payment-header">Xending Global</div>
+            <div class="payment-header">Xending Capital</div>
             <div class="payment-details">
               ${withoutRate
                 ? `<p>Amount <strong>${d.buyCurrency || 'USD'} ${d.buyAmount || '100,000.00'}</strong></p><p>by Wire transfer to:</p>`
@@ -281,13 +281,13 @@ export class TemplateService {
       : '';
 
     return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Xending Global - Deal Confirmation</title>
+<html><head><meta charset="UTF-8"><title>Xending Capital - Deal Confirmation</title>
 <style>${getXendingCSS()}</style></head><body><div class="container">
 <!-- Header with Xending logo -->
 <div class="header">
   <div class="logo-section"><div class="logo">${this.generateLogoHTML(d.logo)}</div></div>
   <div class="header-text">
-    <p><strong>Xending Global Payments</strong></p>
+    <p><strong>Xending Capital Payments</strong></p>
     <p>Your trusted partner for international</p>
     <p>foreign exchange transactions</p>
     <p>Please review this confirmation carefully</p>
@@ -304,7 +304,7 @@ export class TemplateService {
   </div>
 </div>
 <!-- Deal confirmation banner -->
-<div class="confirmation-banner">XENDING GLOBAL - DEAL CONFIRMATION</div>
+<div class="confirmation-banner">Xending Capital - DEAL CONFIRMATION</div>
 <!-- Client and deal info -->
 <div class="info-section">
   <div class="left-column">
@@ -328,12 +328,12 @@ ${transactionBlock}
       ${paymentDetailsText}
       <br>
       <p>Payment must be received for</p>
-      <p>Xending Global to process the currency exchange.</p>
+      <p>Xending Capital to process the currency exchange.</p>
     </div>
   </div>
   <div class="bank-details"><div class="bank-info">
     <div class="field-row"><span class="label">Account Number:</span><span class="value">${d.accountNumber1 || 'MX98765432109876543210'}</span></div>
-    <div class="field-row"><span class="label">Account Name:</span><span class="value">${d.accountName1 || 'Xending Global Payments'}</span></div>
+    <div class="field-row"><span class="label">Account Name:</span><span class="value">${d.accountName1 || 'Xending Capital Payments'}</span></div>
     <div class="field-row"><span class="label">Account Address:</span><span class="value">${d.accountAddress1 || 'Torre Xending, Av. Reforma 123, CDMX, Mexico'}</span></div>
     <div class="field-row"><span class="label">SWIFT:</span><span class="value">${d.swift1 || 'XENDMX22'}</span></div>
     <div class="field-row"><span class="label">Bank Name:</span><span class="value">${d.bankName1 || 'Banco Xending Mexico'}</span></div>

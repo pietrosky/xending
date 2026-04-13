@@ -1,4 +1,4 @@
-# 🚀 Capacidades del Generador de PDF - Xending Global
+# 🚀 Capacidades del Generador de PDF - Xending Capital
 
 ## 📋 **Funcionalidades Principales**
 
@@ -23,7 +23,7 @@
 
 ## 🎨 **Templates Disponibles**
 
-### **Xending Global** 🌟
+### **Xending Capital** 🌟
 ```javascript
 // Características del template de Xending:
 - Colores corporativos: #00d4aa (turquesa), #008b8b (teal)
@@ -186,5 +186,5 @@ npm run cleanup             # Limpiar archivos temporales
 
 ---
 
-**Desarrollado para Xending Global** 🌟  
+**Desarrollado para Xending Capital** 🌟  
 *Generación de PDFs de alta performance para transacciones financieras*

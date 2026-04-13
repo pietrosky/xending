@@ -390,11 +390,11 @@ Before generating your response, VERIFY:
         <!-- HEADER ROW -->
         <div class="top-header">
             <div class="logo-section">
-                ${logoBase64 ? `<img src="${logoBase64}" alt="Xending Global" style="height: 50px;">` : ''}
-                <div class="brand-name" style="margin-left: 15px;">Xending Global Payments</div>
+                ${logoBase64 ? `<img src="${logoBase64}" alt="Xending Capital" style="height: 50px;">` : ''}
+                <div class="brand-name" style="margin-left: 15px;">Xending Capital Payments</div>
             </div>
             <div class="header-subtext">
-                Xending Global Payments<br>Mexico Economic Brief
+                Xending Capital Payments<br>Mexico Economic Brief
             </div>
         </div>
 
@@ -411,7 +411,7 @@ Before generating your response, VERIFY:
 
         <!-- FOOTER BANNER -->
         <div class="footer-banner">
-            <span>XENDING GLOBAL PAYMENTS</span>
+            <span>Xending Capital PAYMENTS</span>
             <span>AGENTE: MEXICO NEWS</span>
         </div>
     </div>
