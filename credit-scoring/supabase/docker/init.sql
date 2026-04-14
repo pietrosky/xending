@@ -27,6 +27,9 @@ BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_admin') THEN
     CREATE ROLE supabase_admin LOGIN SUPERUSER PASSWORD 'postgres';
   END IF;
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'admin') THEN
+    CREATE ROLE admin NOLOGIN;
+  END IF;
 END
 $$;
 
@@ -34,17 +37,18 @@ $$;
 GRANT anon TO authenticator;
 GRANT authenticated TO authenticator;
 GRANT service_role TO authenticator;
+GRANT admin TO authenticator;
 
 -- ─── Schema permissions ──────────────────────────────────────────────
 
-GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
-GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role, admin;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role, admin;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role, admin;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role, admin;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role, admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role, admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role, admin;
 
 -- ─── Auth schema + helpers ───────────────────────────────────────────
 

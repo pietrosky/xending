@@ -5,6 +5,7 @@
 
 import type { FXTransactionSummary } from '../types/transaction.types';
 import { formatCurrency } from '../utils/formatters';
+import { computePays } from '../utils/fxConversion';
 
 export interface CancelTransactionModalProps {
   transaction: FXTransactionSummary;
@@ -76,7 +77,7 @@ export function CancelTransactionModal({ transaction: tx, isLoading, onConfirm, 
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Pays (MXN)</span>
-              <span className="tabular-nums font-medium text-foreground">{formatCurrency(tx.pays_mxn, 'MXN')}</span>
+              <span className="tabular-nums font-medium text-foreground">{formatCurrency(computePays(tx.quantity, tx.markup_rate), 'MXN')}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Fecha</span>

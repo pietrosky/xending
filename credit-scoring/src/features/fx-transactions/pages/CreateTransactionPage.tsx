@@ -17,7 +17,7 @@ import { generatePaymentOrderPDFFromTemplate } from '../services/pdfService';
 import { getPaymentAccountById } from '../../payment-instructions/services/paymentAccountService';
 import { TransactionForm } from '../components/TransactionForm';
 import { formatCurrency } from '../utils/formatters';
-import { invertRate } from '../utils/fxConversion';
+import { invertRate, computePays } from '../utils/fxConversion';
 import type { FXTransaction } from '../types/transaction.types';
 import type { CreateTransactionInput } from '../types/transaction.types';
 
@@ -94,8 +94,8 @@ export function CreateTransactionPage() {
           <p className="text-sm text-muted-foreground">
             Monto:{' '}
             {createdTx.buys_currency === 'MXN'
-              ? `${formatCurrency(createdTx.quantity, 'MXN')} / ${invertRate(createdTx.markup_rate).toFixed(4)} = ${formatCurrency(createdTx.pays_mxn, 'USD')}`
-              : `${formatCurrency(createdTx.quantity, 'USD')} x ${createdTx.markup_rate.toFixed(4)} = ${formatCurrency(createdTx.pays_mxn, 'MXN')}`}
+              ? `${formatCurrency(createdTx.quantity, 'MXN')} / ${invertRate(createdTx.markup_rate).toFixed(4)} = ${formatCurrency(computePays(createdTx.quantity, createdTx.markup_rate), 'USD')}`
+              : `${formatCurrency(createdTx.quantity, 'USD')} x ${createdTx.markup_rate.toFixed(4)} = ${formatCurrency(computePays(createdTx.quantity, createdTx.markup_rate), 'MXN')}`}
           </p>
 
           <div className="flex items-center justify-center gap-3 pt-4">

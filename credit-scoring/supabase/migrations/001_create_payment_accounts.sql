@@ -4,6 +4,7 @@ CREATE TABLE cs_company_payment_accounts (
     clabe TEXT NOT NULL CHECK (length(replace(clabe, '-', '')) = 18),
     bank_name TEXT,
     is_primary BOOLEAN DEFAULT false,
+    deleted BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 

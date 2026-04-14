@@ -10,7 +10,6 @@ export interface FXTransaction {
   base_rate: number;
   markup_rate: number;
   pays_currency: FXCurrency;
-  pays_mxn: number;
   status: TransactionStatus;
   payment_account_id: string | null;
   pi_account_id: string | null;

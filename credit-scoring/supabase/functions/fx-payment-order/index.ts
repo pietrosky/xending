@@ -60,7 +60,7 @@ function toDeal(tx: any, co: any, pi: any, pa: any): PdfDealData {
     dealType: 'Spot', buyCurrency: tx.buys_currency ?? 'USD',
     buyAmount: fmtNum(Number(tx.quantity) || 0), exchangeRate: dRate.toFixed(4),
     payCurrency: tx.pays_currency ?? 'MXN',
-    payAmount: fmtNum(Number(tx.pays_mxn) || 0), totalDue: fmtNum(Number(tx.pays_mxn) || 0),
+    payAmount: fmtNum(Number(tx.quantity) * Number(tx.markup_rate) || 0), totalDue: fmtNum(Number(tx.quantity) * Number(tx.markup_rate) || 0),
     accountNumber1: pi?.account_number ?? '', accountName1: pi?.account_name ?? '',
     accountAddress1: pi?.bank_address ?? '', swift1: pi?.swift_code ?? '',
     bankName1: pi?.bank_name ?? '', bankAddress1: pi?.bank_address ?? '',

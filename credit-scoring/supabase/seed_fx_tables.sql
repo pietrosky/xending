@@ -28,7 +28,6 @@ CREATE TABLE IF NOT EXISTS fx_transactions (
     company_id UUID NOT NULL REFERENCES cs_companies(id),
     quantity NUMERIC(15, 2) NOT NULL CHECK (quantity > 0),
     markup_rate NUMERIC(10, 4) NOT NULL CHECK (markup_rate > 0),
-    pays_mxn NUMERIC(15, 2) NOT NULL GENERATED ALWAYS AS (quantity * markup_rate) STORED,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'authorized', 'completed')),
     created_by UUID NOT NULL,
     authorized_by UUID,

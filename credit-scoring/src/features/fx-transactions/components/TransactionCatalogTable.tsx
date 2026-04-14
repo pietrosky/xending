@@ -9,6 +9,7 @@ import { useState, useMemo } from 'react';
 import type { FXTransactionSummary } from '../types/transaction.types';
 import { groupTransactionsByStatus } from '../services/transactionService';
 import { formatCurrency } from '../utils/formatters';
+import { computePays } from '../utils/fxConversion';
 import { AuthorizeButton } from './AuthorizeButton';
 import { ProofUpload } from './ProofUpload';
 
@@ -22,7 +23,7 @@ export interface TransactionCatalogTableProps {
   onRevertCancel?: (transactionId: string) => void;
 }
 
-type SortKey = 'folio' | 'company_legal_name' | 'company_rfc' | 'broker_name' | 'quantity' | 'base_rate' | 'markup_rate' | 'pays_mxn' | 'created_at';
+type SortKey = 'folio' | 'company_legal_name' | 'company_rfc' | 'broker_name' | 'quantity' | 'base_rate' | 'markup_rate' | 'created_at';
 type SortDir = 'asc' | 'desc';
 
 function formatDate(dateStr: string | null): string {
@@ -116,7 +117,7 @@ export function TransactionCatalogTable({
           {th('Buys', 'quantity', 'text-right')}
           {th('TC Base', 'base_rate', 'text-right')}
           {th('TC Markup', 'markup_rate', 'text-right')}
-          {th('Pays', 'pays_mxn', 'text-right')}
+          {th('Pays', 'markup_rate', 'text-right')}
           <th className="px-4 py-2 font-medium text-right">Utilidad</th>
           {th('Fecha', 'created_at')}
           <th className="px-4 py-2 font-medium text-center">Orden de Pago</th>
@@ -180,7 +181,7 @@ export function TransactionCatalogTable({
         <td className="px-4 py-3 text-right tabular-nums">
           {(tx.buys_currency === 'MXN' ? 1 / tx.markup_rate : tx.markup_rate).toFixed(4)}
         </td>
-        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.pays_mxn, tx.pays_currency ?? 'MXN')}</td>
+        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(computePays(tx.quantity, tx.markup_rate), tx.pays_currency ?? 'MXN')}</td>
         <td className="px-4 py-3 text-right tabular-nums">
           {(() => {
             const isSell = tx.buys_currency === 'MXN';
@@ -190,7 +191,7 @@ export function TransactionCatalogTable({
               const baseInv = 1 / tx.base_rate;
               const markupInv = 1 / tx.markup_rate;
               // pays_mxn contiene el monto en USD en operaciones de venta
-              utilidad = (markupInv - baseInv) * tx.pays_mxn;
+              utilidad = (markupInv - baseInv) * computePays(tx.quantity, tx.markup_rate);
             } else {
               // Compra: rates ya en MXN/USD, quantity es el monto USD
               const diff = tx.markup_rate - tx.base_rate;

@@ -13,7 +13,7 @@ import type { FXTransaction } from '../types/transaction.types';
 import type { CompanyFX, PaymentAccount } from '../types/company-fx.types';
 import type { PaymentInstructionAccount } from '../../payment-instructions/types/payment-instruction.types';
 import type { CompanyAddress } from '../../onboarding/types/company.types';
-import { invertRate } from '../utils/fxConversion';
+import { invertRate, computePays } from '../utils/fxConversion';
 
 const PDF_GENERATOR_URL =
   import.meta.env.VITE_PDF_GENERATOR_URL ?? 'http://localhost:3002';
@@ -55,6 +55,8 @@ function buildDealData(
   const displayExchangeRate = isSell ? invertRate(transaction.markup_rate) : transaction.markup_rate;
   const displayUtilidad = displayMarkupRate - displayBaseRate;
 
+  const paysAmount = computePays(transaction.quantity, transaction.markup_rate);
+
   return {
     dealNumber: transaction.folio,
     clientName: company.legal_name,
@@ -68,8 +70,8 @@ function buildDealData(
     markupRate: displayMarkupRate.toFixed(4),
     utilidad: (isSell ? displayUtilidad * -1 : displayUtilidad).toFixed(4),
     payCurrency: transaction.pays_currency,
-    payAmount: transaction.pays_mxn.toLocaleString('en-US', { minimumFractionDigits: 2 }),
-    totalDue: transaction.pays_mxn.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+    payAmount: paysAmount.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+    totalDue: paysAmount.toLocaleString('en-US', { minimumFractionDigits: 2 }),
     // Payment instructions — from PI account (pi_accounts table)
     accountNumber1: piAccount?.account_number ?? '',
     accountName1: piAccount?.account_name ?? '',

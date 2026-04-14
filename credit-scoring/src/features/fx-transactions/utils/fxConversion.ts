@@ -62,3 +62,11 @@ export function getCurrenciesForTab(tab: OperationTab): {
   }
   return { buysCurrency: 'MXN', paysCurrency: 'USD' };
 }
+
+/**
+ * Computes the pays amount from quantity × markup_rate.
+ * Replaces the old DB-generated `pays_mxn` column.
+ */
+export function computePays(quantity: number, markupRate: number): number {
+  return Math.round(quantity * markupRate * 100) / 100;
+}

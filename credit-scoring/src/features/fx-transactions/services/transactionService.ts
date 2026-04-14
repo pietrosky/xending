@@ -110,8 +110,8 @@ export async function getTransactions(): Promise<FXTransactionSummary[]> {
 // ─── Mutations ───────────────────────────────────────────────────────
 
 /**
- * Crea una transacción FX. El folio y pays_mxn se generan automáticamente
- * en la base de datos (folio vía secuencia, pays_mxn como GENERATED ALWAYS).
+ * Crea una transacción FX. El folio se genera automáticamente
+ * en la base de datos vía secuencia.
  *
  * Req 5.7
  */
