@@ -52,7 +52,7 @@ function buildDealData(
   const isSell = transaction.buys_currency === 'MXN';
   const displayBaseRate = isSell ? invertRate(transaction.base_rate) : transaction.base_rate;
   const displayMarkupRate = isSell ? invertRate(transaction.markup_rate) : transaction.markup_rate;
-  const displayExchangeRate = isSell ? invertRate(transaction.exchange_rate) : transaction.exchange_rate;
+  const displayExchangeRate = isSell ? invertRate(transaction.markup_rate) : transaction.markup_rate;
   const displayUtilidad = displayMarkupRate - displayBaseRate;
 
   return {

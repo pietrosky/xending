@@ -26,19 +26,17 @@ export function transformRatesForSubmit(
   tab: OperationTab,
   baseRate: number,
   markupRate: number,
-): { base_rate: number; markup_rate: number; exchange_rate: number } {
+): { base_rate: number; markup_rate: number } {
   if (tab === 'buy') {
     return {
       base_rate: baseRate,
       markup_rate: markupRate,
-      exchange_rate: markupRate,
     };
   }
 
   return {
     base_rate: invertRate(baseRate),
     markup_rate: invertRate(markupRate),
-    exchange_rate: invertRate(markupRate),
   };
 }
 

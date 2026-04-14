@@ -69,7 +69,7 @@ export function RevertCancelModal({ transaction: tx, isLoading, onConfirm, onClo
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Tipo de Cambio</span>
-              <span className="tabular-nums text-foreground">{tx.exchange_rate.toFixed(4)}</span>
+              <span className="tabular-nums text-foreground">{tx.markup_rate.toFixed(4)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Pays (MXN)</span>

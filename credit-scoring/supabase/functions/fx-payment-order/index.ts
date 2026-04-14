@@ -52,7 +52,7 @@ async function loadData(txId: string) {
 // deno-lint-ignore no-explicit-any
 function toDeal(tx: any, co: any, pi: any, pa: any): PdfDealData {
   const isSell = tx.buys_currency === 'MXN';
-  const rate = Number(tx.exchange_rate) || 0;
+  const rate = Number(tx.markup_rate) || 0;
   const dRate = isSell && rate > 0 ? 1 / rate : rate;
   return {
     dealNumber: tx.folio ?? '', clientName: co.legal_name ?? '',

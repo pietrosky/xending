@@ -1,5 +1,5 @@
 -- 50 completed transactions: Xending buys MXN, pays USD
--- quantity stores the MXN amount, pays_mxn = quantity * exchange_rate (USD equivalent)
+-- quantity stores the MXN amount, pays_mxn = quantity * markup_rate (USD equivalent)
 -- base_rate ~0.055-0.060 (MXN→USD), markup 3-15% above
 
 DO $$
@@ -39,7 +39,7 @@ BEGIN
     tx_date := now() - (days_ago || ' days')::interval;
 
     INSERT INTO fx_transactions (
-      company_id, buys_currency, quantity, base_rate, markup_rate, exchange_rate,
+      company_id, buys_currency, quantity, base_rate, markup_rate,
       pays_currency, status, created_by, authorized_by, authorized_at,
       proof_url, created_at, updated_at
     ) VALUES (

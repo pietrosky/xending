@@ -94,8 +94,8 @@ export function CreateTransactionPage() {
           <p className="text-sm text-muted-foreground">
             Monto:{' '}
             {createdTx.buys_currency === 'MXN'
-              ? `${formatCurrency(createdTx.quantity, 'MXN')} / ${invertRate(createdTx.exchange_rate).toFixed(4)} = ${formatCurrency(createdTx.pays_mxn, 'USD')}`
-              : `${formatCurrency(createdTx.quantity, 'USD')} x ${createdTx.exchange_rate.toFixed(4)} = ${formatCurrency(createdTx.pays_mxn, 'MXN')}`}
+              ? `${formatCurrency(createdTx.quantity, 'MXN')} / ${invertRate(createdTx.markup_rate).toFixed(4)} = ${formatCurrency(createdTx.pays_mxn, 'USD')}`
+              : `${formatCurrency(createdTx.quantity, 'USD')} x ${createdTx.markup_rate.toFixed(4)} = ${formatCurrency(createdTx.pays_mxn, 'MXN')}`}
           </p>
 
           <div className="flex items-center justify-center gap-3 pt-4">

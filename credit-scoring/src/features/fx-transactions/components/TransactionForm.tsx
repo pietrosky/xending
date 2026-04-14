@@ -191,8 +191,8 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
       const raw = String(initialData.quantity);
       setBuysRaw(raw);
       setBuysDisplay(formatCurrencyDisplay(raw));
-      setBaseRateRaw(String(initialData.base_rate ?? initialData.exchange_rate));
-      setMarkupRateRaw(String(initialData.markup_rate ?? initialData.exchange_rate));
+      setBaseRateRaw(String(initialData.base_rate));
+      setMarkupRateRaw(String(initialData.markup_rate));
       setBuysCurrency(initialData.buys_currency ?? 'USD');
       setPaysCurrency(initialData.pays_currency ?? 'MXN');
     }
@@ -293,7 +293,6 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
       quantity: parseFloat(buysRaw),
       base_rate: transformed.base_rate,
       markup_rate: transformed.markup_rate,
-      exchange_rate: transformed.exchange_rate,
       pays_currency: paysCurrency,
     });
   }

@@ -31,7 +31,7 @@ BEGIN
     tx_date := now() - (days_ago || ' days')::interval - (floor(random() * 12)::int || ' hours')::interval;
 
     INSERT INTO fx_transactions (
-      company_id, quantity, exchange_rate, status,
+      company_id, quantity, markup_rate, status,
       created_by, authorized_by, authorized_at,
       proof_url, created_at, updated_at
     ) VALUES (

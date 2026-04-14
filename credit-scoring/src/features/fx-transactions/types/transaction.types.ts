@@ -9,7 +9,6 @@ export interface FXTransaction {
   quantity: number;
   base_rate: number;
   markup_rate: number;
-  exchange_rate: number;
   pays_currency: FXCurrency;
   pays_mxn: number;
   status: TransactionStatus;
@@ -41,6 +40,5 @@ export interface CreateTransactionInput {
   quantity: number;
   base_rate: number;
   markup_rate: number;
-  exchange_rate: number;
   pays_currency: FXCurrency;
 }

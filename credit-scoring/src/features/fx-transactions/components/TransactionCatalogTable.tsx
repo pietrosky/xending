@@ -175,10 +175,10 @@ export function TransactionCatalogTable({
         {isAdmin && <td className="px-4 py-3">{tx.broker_name ?? '—'}</td>}
         <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.quantity, tx.buys_currency ?? 'USD')}</td>
         <td className="px-4 py-3 text-right tabular-nums">
-          {(tx.buys_currency === 'MXN' ? 1 / (tx.base_rate ?? tx.exchange_rate) : (tx.base_rate ?? tx.exchange_rate)).toFixed(4)}
+          {(tx.buys_currency === 'MXN' ? 1 / tx.base_rate : tx.base_rate).toFixed(4)}
         </td>
         <td className="px-4 py-3 text-right tabular-nums">
-          {(tx.buys_currency === 'MXN' ? 1 / (tx.markup_rate ?? tx.exchange_rate) : (tx.markup_rate ?? tx.exchange_rate)).toFixed(4)}
+          {(tx.buys_currency === 'MXN' ? 1 / tx.markup_rate : tx.markup_rate).toFixed(4)}
         </td>
         <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.pays_mxn, tx.pays_currency ?? 'MXN')}</td>
         <td className="px-4 py-3 text-right tabular-nums">
@@ -187,13 +187,13 @@ export function TransactionCatalogTable({
             let utilidad: number;
             if (isSell) {
               // Venta: rates almacenados como USD/MXN → invertir a MXN/USD
-              const baseInv = 1 / (tx.base_rate ?? tx.exchange_rate);
-              const markupInv = 1 / (tx.markup_rate ?? tx.exchange_rate);
+              const baseInv = 1 / tx.base_rate;
+              const markupInv = 1 / tx.markup_rate;
               // pays_mxn contiene el monto en USD en operaciones de venta
               utilidad = (markupInv - baseInv) * tx.pays_mxn;
             } else {
               // Compra: rates ya en MXN/USD, quantity es el monto USD
-              const diff = (tx.markup_rate ?? tx.exchange_rate) - (tx.base_rate ?? tx.exchange_rate);
+              const diff = tx.markup_rate - tx.base_rate;
               utilidad = diff * tx.quantity;
             }
             return (

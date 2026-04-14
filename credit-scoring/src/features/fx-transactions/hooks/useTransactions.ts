@@ -65,7 +65,7 @@ export function useTransaction(id: string | undefined) {
 export function useUpdateTransaction() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: { quantity?: number; exchange_rate?: number; base_rate?: number; markup_rate?: number; company_id?: string; payment_account_id?: string; pi_account_id?: string; buys_currency?: string; pays_currency?: string } }) =>
+    mutationFn: ({ id, updates }: { id: string; updates: { quantity?: number; base_rate?: number; markup_rate?: number; company_id?: string; payment_account_id?: string; pi_account_id?: string; buys_currency?: string; pays_currency?: string } }) =>
       updateTransaction(id, updates),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: KEYS.all });

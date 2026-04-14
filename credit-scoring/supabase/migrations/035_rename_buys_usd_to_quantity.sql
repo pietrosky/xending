@@ -3,4 +3,4 @@
 
 ALTER TABLE fx_transactions DROP COLUMN IF EXISTS pays_mxn;
 ALTER TABLE fx_transactions RENAME COLUMN buys_usd TO quantity;
-ALTER TABLE fx_transactions ADD COLUMN pays_mxn NUMERIC(15, 2) GENERATED ALWAYS AS (quantity * exchange_rate) STORED;
+ALTER TABLE fx_transactions ADD COLUMN pays_mxn NUMERIC(15, 2) GENERATED ALWAYS AS (quantity * markup_rate) STORED;

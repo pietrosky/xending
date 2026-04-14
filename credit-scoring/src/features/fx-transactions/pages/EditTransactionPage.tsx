@@ -34,7 +34,7 @@ export function EditTransactionPage() {
   function handleSubmit(input: CreateTransactionInput) {
     if (!id) return;
     updateMutation.mutate(
-      { id, updates: { quantity: input.quantity, base_rate: input.base_rate, markup_rate: input.markup_rate, exchange_rate: input.exchange_rate, payment_account_id: input.payment_account_id, pi_account_id: input.pi_account_id, buys_currency: input.buys_currency, pays_currency: input.pays_currency } },
+      { id, updates: { quantity: input.quantity, base_rate: input.base_rate, markup_rate: input.markup_rate, payment_account_id: input.payment_account_id, pi_account_id: input.pi_account_id, buys_currency: input.buys_currency, pays_currency: input.pays_currency } },
       { onSuccess: () => navigate('/fx/transactions') },
     );
   }
