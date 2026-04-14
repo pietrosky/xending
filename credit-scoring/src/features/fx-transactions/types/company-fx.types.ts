@@ -17,7 +17,7 @@ export interface CompanyFX extends Company {
   contact_email?: string;
   contact_name?: string;
   owner_name?: string;
-  total_buys_usd?: number;
+  total_quantity?: number;
   last_transaction_at?: string;
 }
 

@@ -58,7 +58,7 @@ function toDeal(tx: any, co: any, pi: any, pa: any): PdfDealData {
     dealNumber: tx.folio ?? '', clientName: co.legal_name ?? '',
     clientAddress: fmtAddr(co.address), tradeDate: fmtDate(tx.created_at ?? ''),
     dealType: 'Spot', buyCurrency: tx.buys_currency ?? 'USD',
-    buyAmount: fmtNum(Number(tx.buys_usd) || 0), exchangeRate: dRate.toFixed(4),
+    buyAmount: fmtNum(Number(tx.quantity) || 0), exchangeRate: dRate.toFixed(4),
     payCurrency: tx.pays_currency ?? 'MXN',
     payAmount: fmtNum(Number(tx.pays_mxn) || 0), totalDue: fmtNum(Number(tx.pays_mxn) || 0),
     accountNumber1: pi?.account_number ?? '', accountName1: pi?.account_name ?? '',

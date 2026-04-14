@@ -65,7 +65,7 @@ export interface TransactionFormProps {
 
 interface FieldErrors {
   company?: string;
-  buys_usd?: string;
+  quantity?: string;
   base_rate?: string;
   markup_rate?: string;
   payment_account?: string;
@@ -89,9 +89,9 @@ function validate(
 
   const buys = parseFloat(buysRaw);
   if (!buysRaw.trim()) {
-    errors.buys_usd = 'Monto es requerido';
+    errors.quantity = 'Monto es requerido';
   } else if (isNaN(buys) || buys <= 0) {
-    errors.buys_usd = 'Monto debe ser mayor a 0';
+    errors.quantity = 'Monto debe ser mayor a 0';
   }
 
   const zeroRateMsg = activeTab === 'sell' ? 'Tipo de cambio debe ser mayor a 0' : 'Debe ser mayor a 0';
@@ -158,8 +158,8 @@ function StatusChip({ status }: { status: string }) {
 
 export function TransactionForm({ mode = 'create', initialData, initialCompany, onSubmit, isLoading, error, extraContent, readOnly = false }: TransactionFormProps) {
   const [selectedCompany, setSelectedCompany] = useState<CompanyFX | null>(initialCompany ?? null);
-  const [buysRaw, setBuysRaw] = useState(initialData ? String(initialData.buys_usd) : '');
-  const [buysDisplay, setBuysDisplay] = useState(initialData ? formatCurrencyDisplay(String(initialData.buys_usd)) : '');
+  const [buysRaw, setBuysRaw] = useState(initialData ? String(initialData.quantity) : '');
+  const [buysDisplay, setBuysDisplay] = useState(initialData ? formatCurrencyDisplay(String(initialData.quantity)) : '');
   const [baseRateRaw, setBaseRateRaw] = useState(initialData ? String(initialData.base_rate) : '');
   const [markupRateRaw, setMarkupRateRaw] = useState(initialData ? String(initialData.markup_rate) : '');
   const [paymentAccountId, setPaymentAccountId] = useState(initialData?.payment_account_id ?? '');
@@ -188,7 +188,7 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
 
   useEffect(() => {
     if (initialData) {
-      const raw = String(initialData.buys_usd);
+      const raw = String(initialData.quantity);
       setBuysRaw(raw);
       setBuysDisplay(formatCurrencyDisplay(raw));
       setBaseRateRaw(String(initialData.base_rate ?? initialData.exchange_rate));
@@ -270,7 +270,7 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
     e.preventDefault();
 
     const allTouched: Record<string, boolean> = {};
-    for (const f of ['company', 'buys_usd', 'base_rate', 'markup_rate', 'payment_account', 'pi_account']) {
+    for (const f of ['company', 'quantity', 'base_rate', 'markup_rate', 'payment_account', 'pi_account']) {
       allTouched[f] = true;
     }
     setTouched(allTouched);
@@ -290,7 +290,7 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
       payment_account_id: paymentAccountId,
       pi_account_id: piAccountId,
       buys_currency: buysCurrency,
-      buys_usd: parseFloat(buysRaw),
+      quantity: parseFloat(buysRaw),
       base_rate: transformed.base_rate,
       markup_rate: transformed.markup_rate,
       exchange_rate: transformed.exchange_rate,
@@ -439,15 +439,15 @@ export function TransactionForm({ mode = 'create', initialData, initialCompany, 
               inputMode="decimal"
               value={buysDisplay}
               onChange={handleBuysChange}
-              onBlur={() => handleBlur('buys_usd')}
-              className={readOnly ? readOnlyInput : cls('buys_usd')}
+              onBlur={() => handleBlur('quantity')}
+              className={readOnly ? readOnlyInput : cls('quantity')}
               placeholder="0.00"
               readOnly={readOnly}
               tabIndex={readOnly ? -1 : undefined}
-              aria-invalid={!!errMsg('buys_usd')}
+              aria-invalid={!!errMsg('quantity')}
             />
-            {errMsg('buys_usd') && (
-              <p className="text-xs text-status-error mt-1" role="alert">{errMsg('buys_usd')}</p>
+            {errMsg('quantity') && (
+              <p className="text-xs text-status-error mt-1" role="alert">{errMsg('quantity')}</p>
             )}
           </div>
 

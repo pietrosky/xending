@@ -95,22 +95,22 @@ export async function getCompaniesFX(): Promise<CompanyFX[]> {
   }
 
   // Fetch aggregated transaction data per company (table may not exist yet)
-  const txMap = new Map<string, { total_buys_usd: number; last_transaction_at: string | null }>();
+  const txMap = new Map<string, { total_quantity: number; last_transaction_at: string | null }>();
   const { data: txAggregates, error: txError } = await supabase
     .from('fx_transactions')
-    .select('company_id, buys_usd, created_at, cancelled')
+    .select('company_id, quantity, created_at, cancelled')
     .in('company_id', companyIds)
     .eq('cancelled', false)
     .order('created_at', { ascending: false });
 
   if (!txError && txAggregates) {
-    for (const tx of txAggregates as unknown as Array<{ company_id: string; buys_usd: number; created_at: string }>) {
+    for (const tx of txAggregates as unknown as Array<{ company_id: string; quantity: number; created_at: string }>) {
       const existing = txMap.get(tx.company_id);
       if (existing) {
-        existing.total_buys_usd += Number(tx.buys_usd);
+        existing.total_quantity += Number(tx.quantity);
       } else {
         txMap.set(tx.company_id, {
-          total_buys_usd: Number(tx.buys_usd),
+          total_quantity: Number(tx.quantity),
           last_transaction_at: tx.created_at,
         });
       }
@@ -121,7 +121,7 @@ export async function getCompaniesFX(): Promise<CompanyFX[]> {
   return companyList.map((company) => ({
     ...company,
     owner_name: ownerMap.get(company.id as string) ?? 'Sin asignar',
-    total_buys_usd: txMap.get(company.id as string)?.total_buys_usd ?? 0,
+    total_quantity: txMap.get(company.id as string)?.total_quantity ?? 0,
     last_transaction_at: txMap.get(company.id as string)?.last_transaction_at ?? null,
   })) as CompanyFX[];
 }

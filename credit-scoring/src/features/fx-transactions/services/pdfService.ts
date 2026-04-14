@@ -62,7 +62,7 @@ function buildDealData(
     tradeDate: formatDate(transaction.created_at),
     dealType: 'Spot',
     buyCurrency: transaction.buys_currency,
-    buyAmount: transaction.buys_usd.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+    buyAmount: transaction.quantity.toLocaleString('en-US', { minimumFractionDigits: 2 }),
     exchangeRate: displayExchangeRate.toFixed(4),
     baseRate: displayBaseRate.toFixed(4),
     markupRate: displayMarkupRate.toFixed(4),

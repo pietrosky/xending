@@ -16,7 +16,7 @@ export interface CompanyCatalogTableProps {
   onToggleStatus: (companyId: string, disabled: boolean) => void;
 }
 
-type SortKey = 'legal_name' | 'rfc' | 'owner_name' | 'total_buys_usd' | 'last_transaction_at';
+type SortKey = 'legal_name' | 'rfc' | 'owner_name' | 'total_quantity' | 'last_transaction_at';
 type SortDir = 'asc' | 'desc';
 
 // ─── Sort icon ───────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ export function CompanyCatalogTable({
           case 'legal_name': va = a.legal_name ?? ''; vb = b.legal_name ?? ''; break;
           case 'rfc': va = a.rfc ?? ''; vb = b.rfc ?? ''; break;
           case 'owner_name': va = a.owner_name ?? ''; vb = b.owner_name ?? ''; break;
-          case 'total_buys_usd': va = a.total_buys_usd ?? 0; vb = b.total_buys_usd ?? 0; break;
+          case 'total_quantity': va = a.total_quantity ?? 0; vb = b.total_quantity ?? 0; break;
           case 'last_transaction_at': va = a.last_transaction_at ?? ''; vb = b.last_transaction_at ?? ''; break;
         }
         if (typeof va === 'number' && typeof vb === 'number') {
@@ -130,7 +130,7 @@ export function CompanyCatalogTable({
             )}
             <th className="px-4 py-2 font-medium text-right">
               Total Transacciones (USD)
-              <SortButton active={sortKey === 'total_buys_usd'} dir={sortDir} onToggle={(d) => handleSort('total_buys_usd', d)} />
+              <SortButton active={sortKey === 'total_quantity'} dir={sortDir} onToggle={(d) => handleSort('total_quantity', d)} />
             </th>
             <th className="px-4 py-2 font-medium">
               Última Transacción
@@ -185,7 +185,7 @@ export function CompanyCatalogTable({
                   <td className="px-4 py-3 font-mono text-xs">{company.rfc}</td>
                   {isAdmin && <td className="px-4 py-3">{company.owner_name ?? '—'}</td>}
                   <td className="px-4 py-3 text-right tabular-nums">
-                    {company.total_buys_usd != null ? formatCurrency(company.total_buys_usd, 'USD') : '—'}
+                    {company.total_quantity != null ? formatCurrency(company.total_quantity, 'USD') : '—'}
                   </td>
                   <td className="px-4 py-3">
                     {company.last_transaction_at

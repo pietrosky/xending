@@ -22,7 +22,7 @@ export interface TransactionCatalogTableProps {
   onRevertCancel?: (transactionId: string) => void;
 }
 
-type SortKey = 'folio' | 'company_legal_name' | 'company_rfc' | 'broker_name' | 'buys_usd' | 'base_rate' | 'markup_rate' | 'pays_mxn' | 'created_at';
+type SortKey = 'folio' | 'company_legal_name' | 'company_rfc' | 'broker_name' | 'quantity' | 'base_rate' | 'markup_rate' | 'pays_mxn' | 'created_at';
 type SortDir = 'asc' | 'desc';
 
 function formatDate(dateStr: string | null): string {
@@ -113,7 +113,7 @@ export function TransactionCatalogTable({
           {th('Razón Social', 'company_legal_name')}
           {th('RFC', 'company_rfc')}
           {isAdmin && th('Broker', 'broker_name')}
-          {th('Buys', 'buys_usd', 'text-right')}
+          {th('Buys', 'quantity', 'text-right')}
           {th('TC Base', 'base_rate', 'text-right')}
           {th('TC Markup', 'markup_rate', 'text-right')}
           {th('Pays', 'pays_mxn', 'text-right')}
@@ -173,7 +173,7 @@ export function TransactionCatalogTable({
         <td className="px-4 py-3">{tx.company_legal_name}</td>
         <td className="px-4 py-3 font-mono text-xs">{tx.company_rfc}</td>
         {isAdmin && <td className="px-4 py-3">{tx.broker_name ?? '—'}</td>}
-        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.buys_usd, tx.buys_currency ?? 'USD')}</td>
+        <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.quantity, tx.buys_currency ?? 'USD')}</td>
         <td className="px-4 py-3 text-right tabular-nums">
           {(tx.buys_currency === 'MXN' ? 1 / (tx.base_rate ?? tx.exchange_rate) : (tx.base_rate ?? tx.exchange_rate)).toFixed(4)}
         </td>
@@ -192,9 +192,9 @@ export function TransactionCatalogTable({
               // pays_mxn contiene el monto en USD en operaciones de venta
               utilidad = (markupInv - baseInv) * tx.pays_mxn;
             } else {
-              // Compra: rates ya en MXN/USD, buys_usd es el monto USD
+              // Compra: rates ya en MXN/USD, quantity es el monto USD
               const diff = (tx.markup_rate ?? tx.exchange_rate) - (tx.base_rate ?? tx.exchange_rate);
-              utilidad = diff * tx.buys_usd;
+              utilidad = diff * tx.quantity;
             }
             return (
               <span className={utilidad > 0 ? 'text-green-700' : utilidad < 0 ? 'text-red-700' : ''}>

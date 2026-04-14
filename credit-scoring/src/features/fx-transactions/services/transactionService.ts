@@ -131,7 +131,7 @@ export async function createTransaction(
     .insert({
       company_id: input.company_id,
       buys_currency: input.buys_currency,
-      buys_usd: input.buys_usd,
+      quantity: input.quantity,
       base_rate: input.base_rate,
       markup_rate: input.markup_rate,
       exchange_rate: input.exchange_rate,
@@ -231,7 +231,7 @@ export async function getTransactionById(id: string): Promise<FXTransaction | nu
  */
 export async function updateTransaction(
   transactionId: string,
-  updates: { buys_usd?: number; exchange_rate?: number; base_rate?: number; markup_rate?: number; company_id?: string; payment_account_id?: string; pi_account_id?: string; buys_currency?: string; pays_currency?: string },
+  updates: { quantity?: number; exchange_rate?: number; base_rate?: number; markup_rate?: number; company_id?: string; payment_account_id?: string; pi_account_id?: string; buys_currency?: string; pays_currency?: string },
 ): Promise<FXTransaction> {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) throw new Error('Usuario no autenticado');

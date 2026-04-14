@@ -67,13 +67,17 @@ services:
 
   # ─── Supabase Studio (UI) ─────────────────────────────────────────
   studio:
-    image: supabase/studio:latest
+    image: supabase/studio:2026.04.08-sha-205cbe7
     container_name: xending-studio
     ports:
       - "55423:3000"
     environment:
+      HOSTNAME: "0.0.0.0"
       STUDIO_PG_META_URL: http://meta:8080
       POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: postgres
       DEFAULT_ORGANIZATION_NAME: Xending Capital
       DEFAULT_PROJECT_NAME: Xending Credit
       SUPABASE_URL: http://rest:3000

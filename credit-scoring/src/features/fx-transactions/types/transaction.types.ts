@@ -6,7 +6,7 @@ export interface FXTransaction {
   folio: string;
   company_id: string;
   buys_currency: FXCurrency;
-  buys_usd: number;
+  quantity: number;
   base_rate: number;
   markup_rate: number;
   exchange_rate: number;
@@ -38,7 +38,7 @@ export interface CreateTransactionInput {
   payment_account_id: string;
   pi_account_id: string;
   buys_currency: FXCurrency;
-  buys_usd: number;
+  quantity: number;
   base_rate: number;
   markup_rate: number;
   exchange_rate: number;

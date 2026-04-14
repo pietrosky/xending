@@ -26,9 +26,9 @@ CREATE TABLE IF NOT EXISTS fx_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     folio TEXT UNIQUE NOT NULL DEFAULT 'XG-' || to_char(now(), 'YY') || '-' || lpad(nextval('fx_transaction_folio_seq')::text, 4, '0'),
     company_id UUID NOT NULL REFERENCES cs_companies(id),
-    buys_usd NUMERIC(15, 2) NOT NULL CHECK (buys_usd > 0),
+    quantity NUMERIC(15, 2) NOT NULL CHECK (quantity > 0),
     exchange_rate NUMERIC(10, 4) NOT NULL CHECK (exchange_rate > 0),
-    pays_mxn NUMERIC(15, 2) NOT NULL GENERATED ALWAYS AS (buys_usd * exchange_rate) STORED,
+    pays_mxn NUMERIC(15, 2) NOT NULL GENERATED ALWAYS AS (quantity * exchange_rate) STORED,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'authorized', 'completed')),
     created_by UUID NOT NULL,
     authorized_by UUID,
@@ -53,11 +53,11 @@ INSERT INTO cs_companies_owners (company_id, user_id) VALUES
 
 -- Seed: FX transactions
 -- Dist. Azteca: 2 transactions (1 authorized, 1 pending)
-INSERT INTO fx_transactions (company_id, buys_usd, exchange_rate, status, created_by, authorized_by, authorized_at) VALUES
+INSERT INTO fx_transactions (company_id, quantity, exchange_rate, status, created_by, authorized_by, authorized_at) VALUES
   ('a1111111-1111-1111-1111-111111111111', 50000.00, 17.2350, 'authorized', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', now() - interval '2 days'),
   ('a1111111-1111-1111-1111-111111111111', 25000.00, 17.3100, 'pending', '00000000-0000-0000-0000-000000000001', NULL, NULL);
 
 -- TecNorte: 2 transactions (1 completed with proof, 1 pending)
-INSERT INTO fx_transactions (company_id, buys_usd, exchange_rate, status, created_by, authorized_by, authorized_at, proof_url) VALUES
+INSERT INTO fx_transactions (company_id, quantity, exchange_rate, status, created_by, authorized_by, authorized_at, proof_url) VALUES
   ('b2222222-2222-2222-2222-222222222222', 100000.00, 17.1500, 'completed', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', now() - interval '5 days', 'http://localhost:55421/storage/fx-proofs/proof-example.pdf'),
   ('b2222222-2222-2222-2222-222222222222', 75000.00, 17.2800, 'pending', '00000000-0000-0000-0000-000000000001', NULL, NULL);

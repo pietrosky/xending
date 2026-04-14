@@ -65,7 +65,7 @@ export function RevertCancelModal({ transaction: tx, isLoading, onConfirm, onClo
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Buys (USD)</span>
-              <span className="tabular-nums font-medium text-foreground">{formatCurrency(tx.buys_usd, 'USD')}</span>
+              <span className="tabular-nums font-medium text-foreground">{formatCurrency(tx.quantity, 'USD')}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Tipo de Cambio</span>
