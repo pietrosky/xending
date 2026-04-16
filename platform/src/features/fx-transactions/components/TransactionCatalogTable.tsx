@@ -176,14 +176,15 @@ export function TransactionCatalogTable({
         {isAdmin && <td className="px-4 py-3">{tx.broker_name ?? '—'}</td>}
         <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(tx.quantity, tx.buys_currency ?? 'USD')}</td>
         <td className="px-4 py-3 text-right tabular-nums">
-          {(tx.buys_currency === 'MXN' ? 1 / tx.base_rate : tx.base_rate).toFixed(4)}
+          {tx.base_rate != null ? (tx.buys_currency === 'MXN' ? 1 / tx.base_rate : tx.base_rate).toFixed(4) : '—'}
         </td>
         <td className="px-4 py-3 text-right tabular-nums">
-          {(tx.buys_currency === 'MXN' ? 1 / tx.markup_rate : tx.markup_rate).toFixed(4)}
+          {tx.markup_rate != null ? (tx.buys_currency === 'MXN' ? 1 / tx.markup_rate : tx.markup_rate).toFixed(4) : '—'}
         </td>
         <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(computePays(tx.quantity, tx.markup_rate), tx.pays_currency ?? 'MXN')}</td>
         <td className="px-4 py-3 text-right tabular-nums">
           {(() => {
+            if (tx.base_rate == null || tx.markup_rate == null) return '—';
             const isSell = tx.buys_currency === 'MXN';
             let utilidad: number;
             if (isSell) {
