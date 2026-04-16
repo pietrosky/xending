@@ -20,5 +20,5 @@ export async function checkRFCExists(
 
   const { data, error } = await query;
   if (error) throw new Error(`Error checking RFC: ${error.message}`);
-  return (data?.length ?? 0) > 0;
+  return ((data as unknown[] | null)?.length ?? 0) > 0;
 }

@@ -98,7 +98,7 @@ async function getCachedResult(rfc: string): Promise<ScoryScoringResponse | null
     .single();
 
   if (error || !data) return null;
-  return (data as CacheRow).response_data;
+  return (data as unknown as CacheRow).response_data;
 }
 
 async function setCacheResult(rfc: string, result: ScoryScoringResponse): Promise<void> {

@@ -262,25 +262,28 @@ export async function createCompanyFX(
     .single();
 
   if (companyError) throw new Error(`Error creating company: ${companyError.message}`);
+  if (!company) throw new Error('Company not found');
+
+  const companyId = company.id as string;
 
   // Insert owner relationship
   const { error: ownerError } = await supabase
     .from('cs_companies_owners')
     .insert({
-      company_id: company.id,
+      company_id: companyId,
       user_id: userId,
     });
 
   if (ownerError) {
     // Rollback: delete company
-    await supabase.from('cs_companies').delete().eq('id', company.id);
+    await supabase.from('cs_companies').delete().eq('id', companyId);
     throw new Error(`Error creating owner relationship: ${ownerError.message}`);
   }
 
   // Insert payment accounts
   if (input.payment_accounts.length > 0) {
     const accounts = input.payment_accounts.map((acc, index) => ({
-      company_id: company.id,
+      company_id: companyId,
       clabe: acc.clabe.replace(/[^0-9]/g, ''), // Store raw digits
       bank_name: acc.bank_name || null,
       currency: acc.currency || 'USD',
@@ -293,8 +296,8 @@ export async function createCompanyFX(
 
     if (accountsError) {
       // Rollback: delete owner and company
-      await supabase.from('cs_companies_owners').delete().eq('company_id', company.id);
-      await supabase.from('cs_companies').delete().eq('id', company.id);
+      await supabase.from('cs_companies_owners').delete().eq('company_id', companyId);
+      await supabase.from('cs_companies').delete().eq('id', companyId);
       throw new Error(`Error creating payment accounts: ${accountsError.message}`);
     }
   }
@@ -309,7 +312,7 @@ export async function createCompanyFX(
       is_primary: boolean;
     }> = [
       {
-        company_id: company.id,
+        company_id: companyId,
         contact_type: 'email',
         contact_value: input.contact_email.trim().toLowerCase(),
         contact_name: input.contact_name?.trim() || null,
@@ -321,7 +324,7 @@ export async function createCompanyFX(
   }
 
   // Return the created company with payment accounts
-  return getCompanyFXById(company.id) as Promise<CompanyFX>;
+  return getCompanyFXById(companyId) as Promise<CompanyFX>;
 }
 
 /**
@@ -472,5 +475,11 @@ export async function getCompanyArchive(
     .order('archived_at', { ascending: false });
 
   if (error) throw new Error(`Error fetching company archive: ${error.message}`);
-  return data ?? [];
+  return (data ?? []) as unknown as Array<{
+    id: string;
+    original_id: string;
+    full_record: Record<string, unknown>;
+    archived_by: string;
+    archived_at: string;
+  }>;
 }

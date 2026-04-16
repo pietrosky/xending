@@ -58,7 +58,7 @@ async function getCachedResult(rfc: string): Promise<ComplianceResult | null> {
 
   if (error || !data) return null;
 
-  const row = data as CacheRow;
+  const row = data as unknown as CacheRow;
   return row.response_data;
 }
 

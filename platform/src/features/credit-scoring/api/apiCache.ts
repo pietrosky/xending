@@ -50,7 +50,7 @@ export async function getFromCache<T>(
 
   if (error || !data) return null;
 
-  return (data as CacheEntry<T>).response_data;
+  return (data as unknown as CacheEntry<T>).response_data;
 }
 
 /**

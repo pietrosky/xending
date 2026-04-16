@@ -28,7 +28,7 @@ export async function getCompanies(): Promise<CompanySummary[]> {
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(`Error fetching companies: ${error.message}`);
-  return data ?? [];
+  return (data ?? []) as unknown as CompanySummary[];
 }
 
 export async function getCompanyById(id: string): Promise<Company | null> {
@@ -42,7 +42,7 @@ export async function getCompanyById(id: string): Promise<Company | null> {
     if (error.code === 'PGRST116') return null; // not found
     throw new Error(`Error fetching company: ${error.message}`);
   }
-  return data;
+  return data as unknown as Company;
 }
 
 export async function getCompanyContacts(companyId: string): Promise<CompanyContact[]> {
@@ -53,7 +53,7 @@ export async function getCompanyContacts(companyId: string): Promise<CompanyCont
     .order('is_primary', { ascending: false });
 
   if (error) throw new Error(`Error fetching contacts: ${error.message}`);
-  return data ?? [];
+  return (data ?? []) as unknown as CompanyContact[];
 }
 
 export async function findCompanyByRfc(rfc: string): Promise<Company | null> {
@@ -68,7 +68,7 @@ export async function findCompanyByRfc(rfc: string): Promise<Company | null> {
     if (error.code === 'PGRST116') return null;
     throw new Error(`Error searching company: ${error.message}`);
   }
-  return data;
+  return data as unknown as Company;
 }
 
 // ─── Mutations ───────────────────────────────────────────────────────
@@ -96,6 +96,9 @@ export async function createCompany(input: CreateCompanyInput): Promise<Company>
     .single();
 
   if (companyError) throw new Error(`Error creating company: ${companyError.message}`);
+  if (!company) throw new Error('Company not found');
+
+  const companyId = company.id as string;
 
   // Insert primary email contact
   const contacts: Array<{
@@ -106,7 +109,7 @@ export async function createCompany(input: CreateCompanyInput): Promise<Company>
     is_primary: boolean;
   }> = [
     {
-      company_id: company.id,
+      company_id: companyId,
       contact_type: 'email',
       contact_value: input.contact_email.trim().toLowerCase(),
       contact_name: input.contact_name?.trim() || null,
@@ -116,7 +119,7 @@ export async function createCompany(input: CreateCompanyInput): Promise<Company>
 
   if (input.contact_phone?.trim()) {
     contacts.push({
-      company_id: company.id,
+      company_id: companyId,
       contact_type: 'phone',
       contact_value: input.contact_phone.trim(),
       contact_name: input.contact_name?.trim() || null,
@@ -130,11 +133,11 @@ export async function createCompany(input: CreateCompanyInput): Promise<Company>
 
   if (contactError) {
     // Rollback: delete company if contacts fail
-    await supabase.from('cs_companies').delete().eq('id', company.id);
+    await supabase.from('cs_companies').delete().eq('id', companyId);
     throw new Error(`Error creating contacts: ${contactError.message}`);
   }
 
-  return company;
+  return company as unknown as Company;
 }
 
 export async function updateCompanyStatus(

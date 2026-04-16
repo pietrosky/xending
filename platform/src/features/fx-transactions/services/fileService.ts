@@ -103,5 +103,5 @@ export async function getProofUrl(transactionId: string): Promise<string | null>
     throw new Error(`Error al obtener comprobante: ${error.message}`);
   }
 
-  return data?.proof_url ?? null;
+  return (data?.proof_url as string) ?? null;
 }
