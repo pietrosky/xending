@@ -14,7 +14,7 @@ Get-ChildItem platform/supabase/migrations/*.sql | Sort-Object Name | ForEach-Ob
 }
 
 Write-Host "=== Seeds ===" -ForegroundColor Cyan
-Get-ChildItem platform/supabase/seed_*.sql | Sort-Object Name | ForEach-Object {
+Get-ChildItem platform/supabase/*seed*.sql | Sort-Object Name | ForEach-Object {
     Write-Host "  Seeding: $($_.Name)"
     Get-Content $_.FullName | docker exec -i xending-db psql -U postgres -d postgres
 }
