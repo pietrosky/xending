@@ -50,6 +50,16 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authentic
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role, admin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role, admin;
 
+-- ─── Archive schema permissions ──────────────────────────────────────
+CREATE SCHEMA IF NOT EXISTS archive;
+
+GRANT USAGE ON SCHEMA archive TO anon, authenticated, service_role, admin;
+GRANT ALL ON ALL TABLES IN SCHEMA archive TO anon, authenticated, service_role, admin;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA archive TO anon, authenticated, service_role, admin;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA archive GRANT ALL ON TABLES TO anon, authenticated, service_role, admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA archive GRANT ALL ON SEQUENCES TO anon, authenticated, service_role, admin;
+
 -- ─── Auth schema + helpers ───────────────────────────────────────────
 
 CREATE SCHEMA IF NOT EXISTS auth;
