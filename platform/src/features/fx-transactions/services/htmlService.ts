@@ -56,12 +56,12 @@ export class TemplateService {
           </div>
           <div class="transaction-row">
             <div class="col-left"><strong>Divisa requerida por el cliente:</strong> ${d.buyCurrency}<br>
-            <strong>Monto a enviar:</strong> ${d.buyAmount}<br>
+            <strong>Monto a enviar:</strong> ${d.buyAmount}<br>${d.buyAmountString}<br>
             <strong>Plazo a financiar:</strong> ${d.financingTerm}</div>
 
             <div class="col-center">${d.exchangeRate}</div>
 
-            <div class="col-right">${d.clientName} pagará<br>$${d.payAmount}</div>
+            <div class="col-right">${d.clientName} pagará<br>$${d.payAmount} (${d.payAmountString})</div>
           </div>
         </div>`;
 

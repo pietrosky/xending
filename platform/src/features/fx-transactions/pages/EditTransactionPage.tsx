@@ -32,13 +32,10 @@ export function EditTransactionPage() {
     if (tx?.company_id) {
       getCompanyFXById(tx.company_id).then((c) => setCompany(c));
     }
-  }, [tx?.company_id]);
-
-  useEffect(() => {
-  if (tx?.pi_account_id) {
-    getPaymentAccountById(tx.pi_account_id).then((pi) => setPiAccount(pi));
-  }
-}, [tx?.pi_account_id]);
+    if (tx?.pi_account_id) {
+      getPaymentAccountById(tx.pi_account_id).then((pi) => setPiAccount(pi));
+    }
+  }, [tx?.company_id, tx?.pi_account_id]);
 
   function handleSubmit(input: CreateTransactionInput) {
     if (!id) return;
@@ -59,16 +56,26 @@ export function EditTransactionPage() {
   if (!tx) {
     return <div className="text-center py-20 text-sm text-destructive">Transacción no encontrada.</div>;
   }
+  const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('es-MX', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+  };
 
   async function handleGenerateHTML(transactionId: string) {
     try {
+      const payAmount = (tx?.quantity * parseFloat(tx?.markup_rate.toPrecision(4)))
+      const buyAmount = tx?.quantity
       const htmlDealData = {
         buyCurrency: tx?.buys_currency,
-        buyAmount: tx?.quantity.toString(), // Falta poner con currencyfilter
+        buyAmount: formatCurrency(buyAmount), // Falta poner con currencyfilter
+        buyAmountString: '',//buyAmount,
         financingTerm: '1 Dia', // Todavia no encontre el financing term
         exchangeRate: tx?.markup_rate.toPrecision(4),
         clientName: company?.legal_name?.toString(),
-        payAmount: (tx?.quantity * tx?.markup_rate.toPrecision(4)), // Falta poner con currencyfilter
+        payAmount: formatCurrency(payAmount),
+        payAmountString: '',//payAmount,
         currency: tx?.pays_currency,
         valueDate: new Date().toLocaleDateString('es-MX'),
         amountToReceive: tx?.quantity.toString(),

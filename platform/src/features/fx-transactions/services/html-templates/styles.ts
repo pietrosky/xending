@@ -37,7 +37,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 
 .transaction-header { display: flex; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-bottom: 2px solid #cbd5e1; font-weight: 700; font-size: 10px; color: #475569; }
 .transaction-row { display: flex; border-bottom: 1px solid #e9ecef; }
 .col-left, .col-center, .col-right { padding: 10px 12px; text-align: center; flex: 1; border-right: 1px solid #e9ecef;}
-.col-right { border-right: none; }
+.col-center { flex: 0.3; }
 .fee-text { font-size: 9px; color: #64748b; }
 .total-row { display: flex; justify-content: flex-end; align-items: center; background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%); color: white; padding: 10px 15px; font-weight: 700; font-size: 12px; }
 .total-label { margin-right: 15px; }
