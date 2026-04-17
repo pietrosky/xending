@@ -10,12 +10,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTransaction, useUpdateTransaction } from '../hooks/useTransactions';
 import { useRole } from '../hooks/useRole';
 import { getCompanyFXById } from '../services/companyServiceFX';
+import { getPaymentAccountById } from '../../payment-instructions/services/paymentAccountService';
 import { TransactionForm } from '../components/TransactionForm';
 import { AuthorizeButton } from '../components/AuthorizeButton';
 import { ProofUpload } from '../components/ProofUpload';
 import type { CompanyFX } from '../types/company-fx.types';
-import type { CreateTransactionInput } from '../types/transaction.types';
+import type { CreateTransactionInput, FXTransaction } from '../types/transaction.types';
+import type { PaymentInstructionAccount } from '../../payment-instructions/types/payment-instruction.types';
 
+import {TemplateService} from '../services/htmlService';
 export function EditTransactionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -23,13 +26,19 @@ export function EditTransactionPage() {
   const { data: tx, isLoading: txLoading, refetch } = useTransaction(id);
   const updateMutation = useUpdateTransaction();
   const [company, setCompany] = useState<CompanyFX | null>(null);
-
+  const [piAccount, setPiAccount] = useState<PaymentInstructionAccount | null>(null); //Para mapear las Payment account
   // Load company data when transaction loads
   useEffect(() => {
     if (tx?.company_id) {
       getCompanyFXById(tx.company_id).then((c) => setCompany(c));
     }
   }, [tx?.company_id]);
+
+  useEffect(() => {
+  if (tx?.pi_account_id) {
+    getPaymentAccountById(tx.pi_account_id).then((pi) => setPiAccount(pi));
+  }
+}, [tx?.pi_account_id]);
 
   function handleSubmit(input: CreateTransactionInput) {
     if (!id) return;
@@ -51,9 +60,73 @@ export function EditTransactionPage() {
     return <div className="text-center py-20 text-sm text-destructive">Transacción no encontrada.</div>;
   }
 
+  async function handleGenerateHTML(transactionId: string) {
+    try {
+      const htmlDealData = {
+        buyCurrency: tx?.buys_currency,
+        buyAmount: tx?.quantity.toString(), // Falta poner con currencyfilter
+        financingTerm: '1 Dia', // Todavia no encontre el financing term
+        exchangeRate: tx?.markup_rate.toPrecision(4),
+        clientName: company?.legal_name?.toString(),
+        payAmount: (tx?.quantity * tx?.markup_rate.toPrecision(4)), // Falta poner con currencyfilter
+        currency: tx?.pays_currency,
+        valueDate: new Date().toLocaleDateString('es-MX'),
+        amountToReceive: tx?.quantity.toString(),
+        beneficiary: company?.legal_name?.toString(),
+        bankName: company?.payment_accounts?.[0]?.bank_name,
+        clabe: company?.payment_accounts?.[0]?.clabe,
+        reference: tx?.folio,
+        dealNumber: tx?.folio,
+        clientAddress: [company?.address.street + ' ' + company?.address.city + ' ' + company?.address.state + ' ' +company?.address?.zip + ' ' + (company?.address?.country || '')],
+        payCurrency: tx?.pays_currency,
+        myBankName: piAccount?.bank_name,
+        myClabe: piAccount?.account_number,
+        myPaymentMethod: '', // Falta definir
+      };
+        
+      const html = TemplateService.generateHTML('xending', htmlDealData);
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `transaction-${transactionId}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (error) {
+      console.error('Error generating HTML:', error);
+      alert('Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  }
   // Extra content: authorize button + proof upload
   const extraContent = (
     <div className="space-y-4">
+      {/* Documentation section */}
+    <div className="rounded-lg border border-border p-4">
+      <p className="text-sm font-medium text-foreground mb-3">Documentación</p>
+      <div className="flex gap-2 flex-col sm:flex-row">
+        <button
+          type="button"
+          onClick={() => handleGenerateHTML(tx.id)}
+          className="flex-1 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+        >
+          Resumen Operacion
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            // TODO: Implementar segunda func
+            alert('Todavia no creo el html');
+          }}
+          className="flex-1 px-4 py-2 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/90 transition-colors"
+        >
+          Constancia de disposicion
+        </button>
+      </div>
+    </div>
       {/* Authorize button for pending transactions */}
       {tx.status === 'pending' && isAdmin && (
         <div className="rounded-lg border border-border p-4">

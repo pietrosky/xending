@@ -4,7 +4,8 @@
  * Este servicio se encarga de tomar los datos de una operación pactada (como compra-venta de divisas) y generar un resumen en formato HTML que pueda ser visualizador.
  */
 
-import { getXendingCSS, getGenericCSS } from './styles.ts';
+import { getXendingCSS, getGenericCSS } from './html-templates/styles.ts';
+
 
 // ---------------------------------------------------------------------------
 // Types

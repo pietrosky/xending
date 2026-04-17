@@ -38,6 +38,7 @@ export function TransactionCatalogPage() {
     } catch { /* non-critical */ }
   }
 
+
   function handleCancelRequest(txId: string) {
     const tx = transactions?.find((t) => t.id === txId);
     if (tx) setCancelTarget(tx);
