@@ -123,8 +123,8 @@ export class TemplateService {
       <div class="post-tablas">
         <p><strong><i>Instrucciones de cobro de transaccion: ${d.dealNumber}</i></strong></p>
         <p><strong>El cliente deberá realizar el pago por la cantidad de ${d.payAmount} ${d.payCurrency} a las siguientes instrucciones:</strong></p>
-        <p>Nombre: <i>${d.myBankName || 'LEMAD CAPITAL S.A.P.I. DE C.V. SOFOM E.N.R.'}</i><br></p>
-        <p>Banco: <i> BANCREA </i> / CLABE INTERBANCARIA: <i>${d.myClabe || '152580120000915511'}</i> / Metodo: <i>${d.myPaymentMethod || 'SPEI'}</i> / Referencia de pago: ${d.dealNumber || 'N/A'}<br></p>
+        <p>Nombre: <i>${d.myBankName }</i><br></p>
+        <p>Banco: <i> BANCREA </i> / CLABE INTERBANCARIA: <i>${d.myClabe}</i> / Metodo: <i>${d.myPaymentMethod}</i> / Referencia de pago: ${d.dealNumber}<br></p>
       </div>
       <div class="legal-message">
         <p><strong><i>Aviso importante:</i></strong></p><br><br>
