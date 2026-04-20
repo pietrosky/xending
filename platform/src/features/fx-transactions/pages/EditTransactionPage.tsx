@@ -108,7 +108,7 @@ export function EditTransactionPage() {
       
     const link = document.createElement('a');
     link.href = url;
-    link.download = `transaction-${transactionId}.html`;
+    link.download = `${template}-${transactionId}.html`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
