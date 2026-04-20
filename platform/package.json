@@ -21,6 +21,7 @@
     "react-router-dom": "^6.28.0",
     "recharts": "^2.13.0",
     "tailwind-merge": "^2.6.0",
+    "to-words": "^5.5.0",
     "zustand": "^5.0.0"
   },
   "devDependencies": {

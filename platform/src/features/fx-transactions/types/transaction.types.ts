@@ -41,3 +41,27 @@ export interface CreateTransactionInput {
   markup_rate: number;
   pays_currency: FXCurrency;
 }
+
+export interface HtmlDealData {
+  buyCurrency: string;
+  buyAmount: string;
+  buyAmountString: string;
+  financingTerm: string;
+  exchangeRate: string
+  clientName: string;
+  payAmount: string; // buyAmount * exchangeRate
+  payAmountString: string;
+  currency: string;
+  valueDate: string;
+  amountToReceive: string;
+  beneficiary: string;
+  bankName: string;
+  clabe: string;
+  reference: string;
+  dealNumber: string;
+  clientAddress: string;
+  payCurrency: string;
+  myBankName: string;
+  myClabe: string;
+  myPaymentMethod: string;
+}

@@ -14,11 +14,14 @@ import { getPaymentAccountById } from '../../payment-instructions/services/payme
 import { TransactionForm } from '../components/TransactionForm';
 import { AuthorizeButton } from '../components/AuthorizeButton';
 import { ProofUpload } from '../components/ProofUpload';
+import {TemplateService} from '../services/htmlService';
+import { formatCurrency, amountToWords } from '../utils/formatters';
 import type { CompanyFX } from '../types/company-fx.types';
 import type { CreateTransactionInput, FXTransaction } from '../types/transaction.types';
 import type { PaymentInstructionAccount } from '../../payment-instructions/types/payment-instruction.types';
 
-import {TemplateService} from '../services/htmlService';
+
+
 export function EditTransactionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -27,7 +30,6 @@ export function EditTransactionPage() {
   const updateMutation = useUpdateTransaction();
   const [company, setCompany] = useState<CompanyFX | null>(null);
   const [piAccount, setPiAccount] = useState<PaymentInstructionAccount | null>(null); //Para mapear las Payment account
-  // Load company data when transaction loads
   useEffect(() => {
     if (tx?.company_id) {
       getCompanyFXById(tx.company_id).then((c) => setCompany(c));
@@ -56,26 +58,20 @@ export function EditTransactionPage() {
   if (!tx) {
     return <div className="text-center py-20 text-sm text-destructive">Transacción no encontrada.</div>;
   }
-  const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('es-MX', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-  };
 
   async function handleGenerateHTML(transactionId: string) {
     try {
-      const payAmount = (tx?.quantity * parseFloat(tx?.markup_rate.toPrecision(4)))
+      const payAmount = (Number(tx?.quantity) * Number(tx?.markup_rate))
       const buyAmount = tx?.quantity
       const htmlDealData = {
         buyCurrency: tx?.buys_currency,
-        buyAmount: formatCurrency(buyAmount), // Falta poner con currencyfilter
-        buyAmountString: '',//buyAmount,
-        financingTerm: '1 Dia', // Todavia no encontre el financing term
+        buyAmount: formatCurrency(buyAmount, tx?.buys_currency),
+        buyAmountString: amountToWords(buyAmount, tx?.buys_currency),
+        financingTerm: '1 Dia', // TODO: Falta definir
         exchangeRate: tx?.markup_rate.toPrecision(4),
         clientName: company?.legal_name?.toString(),
-        payAmount: formatCurrency(payAmount),
-        payAmountString: '',//payAmount,
+        payAmount: formatCurrency(payAmount, tx?.pays_currency),
+        payAmountString: amountToWords(payAmount ,tx?.pays_currency),//payAmount,
         currency: tx?.pays_currency,
         valueDate: new Date().toLocaleDateString('es-MX'),
         amountToReceive: tx?.quantity.toString(),
@@ -88,7 +84,7 @@ export function EditTransactionPage() {
         payCurrency: tx?.pays_currency,
         myBankName: piAccount?.bank_name,
         myClabe: piAccount?.account_number,
-        myPaymentMethod: '', // Falta definir
+        myPaymentMethod: 'SPEI', // TODO: Falta definir
       };
         
       const html = TemplateService.generateHTML('xending', htmlDealData);
