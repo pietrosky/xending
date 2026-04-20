@@ -4,7 +4,7 @@
  * Este servicio se encarga de tomar los datos de una operación pactada (como compra-venta de divisas) y generar un resumen en formato HTML que pueda ser visualizador.
  */
 
-import { getXendingCSS, getGenericCSS } from './html-templates/styles.ts';
+import { getResumenCSS, getConstanciaCSS } from './html-templates/styles.ts';
 
 
 // ---------------------------------------------------------------------------
@@ -25,23 +25,21 @@ const XENDING_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYA
 // ---------------------------------------------------------------------------
 
 export class TemplateService {
-
-  // deje este metodo asi porque en la base que utilice habian 3 partners, pero como el ejemplo era unicamente de Xending lo deje asi.
   static generateHTML(partner: string, dealData: DealData): string {
     const p = partner.toLowerCase();
     switch (p) {
-      case 'xending':
-        return this.generateXendingHTML(dealData);
-      case 'generic':
-        return this.generateGenericHTML(dealData);
+      case 'resumen':
+        return this.generateResumenHTML(dealData);
+      case 'constancia':
+        return this.generateConstanciaHTML(dealData);
       default:
-        throw new Error(`Template not found for partner: ${partner}`);
+        throw new Error(`Template no encontrado: ${partner}`);
     }
   }
 
-  // ── Xending Template
+  // ── Resumen Template
 
-  static generateXendingHTML(d: DealData): string {
+  static generateResumenHTML(d: DealData): string {
 
     const logoHTML = `<div class="xending-logo">
       <img src="${XENDING_LOGO}" alt="Xending Capital" class="logo-image" />
@@ -92,7 +90,7 @@ export class TemplateService {
 
     return `<!DOCTYPE html>
       <html><head><meta charset="UTF-8"><title>Xending Capital - RESUMEN DE LA OPERACIÓN PACTADA</title>
-      <style>${getXendingCSS()}</style></head><body><div class="container">
+      <style>${getResumenCSS()}</style></head><body><div class="container">
       <!-- Header -->
       <div class="logo-section"><div class="logo">${logoHTML}<div class="logo-text">Xending Capital</div></div></div>
       <div class="header-text">
@@ -123,8 +121,8 @@ export class TemplateService {
       <div class="post-tablas">
         <p><strong><i>Instrucciones de cobro de transaccion: ${d.dealNumber}</i></strong></p>
         <p><strong>El cliente deberá realizar el pago por la cantidad de ${d.payAmount} ${d.payCurrency} a las siguientes instrucciones:</strong></p>
-        <p>Nombre: <i>${d.myBankName }</i><br></p>
-        <p>Banco: <i> BANCREA </i> / CLABE INTERBANCARIA: <i>${d.myClabe}</i> / Metodo: <i>${d.myPaymentMethod}</i> / Referencia de pago: ${d.dealNumber}<br></p>
+        <p>Nombre: <i>LEMAD CAPITAL S.A.P.I. DE C.V. SOFOM E.N.R.</i><br></p>
+        <p>Banco: <i>${d.myBankName }</i> / CLABE INTERBANCARIA: <i>${d.myClabe}</i> / Metodo: <i>${d.myPaymentMethod}</i> / Referencia de pago: ${d.dealNumber}<br></p>
       </div>
       <div class="legal-message">
         <p><strong><i>Aviso importante:</i></strong></p><br><br>
@@ -139,27 +137,109 @@ export class TemplateService {
       </div>
       <!-- Footer con logo centrado -->
       <footer class="page-footer">
-        <div class="footer-logo">${logoHTML}</div><div class="logo-text">Xending Capital</div>
         <p>PEDRO RAMIREZ VAZQUEZ 200-11 PISO 1 INT. A SAN PEDRO GARZA GARCÍA, N.L.</p>
         <p>Teléfono: 81-20-80-90-56 | <a href="www.lemadcapital.com">www.lemadcapital.com</a></p>
       </footer>
       </div></body></html>`;
   }
 
-  // ── Generic Template ────────────────────────────────────────────
+  static generateConstanciaHTML(d: DealData): string {
+  return `<!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>${getConstanciaCSS()}</style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header-wrapper">
+          <div class="logo-section">
+            <div class="logo">
+              <img src="${XENDING_LOGO}" class="logo-image" alt="Xending Capital" />
+              <span class="logo-text">Xending Capital</span>
+            </div>
+          </div>
+          <div class="header-text">
+            <p>Xending Capital es una marca comercial utilizada por</p>
+            <p>Lemad Capital, S.A.P.I. de C.V., SOFOM, E.N.R., de C.V., SOFOM, E.N.R.,</p>
+            <p>Sociedad Financiera de Objeto Múltiple, Entidad No Regulada,</p>
+            <p>que opera conforme a la Ley General de Organizaciones y Actividades</p>
+            <p>Auxiliares del Crédito, en términos del artículo 87-B, así como</p>
+            <p>a las disposiciones aplicables en materia de prevención de lavado de dinero.</p>
+          </div>
+        </div>
 
-  static generateGenericHTML(d: DealData): string {
-    return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Deal Confirmation</title>
-<style>${getGenericCSS()}</style></head><body><div class="container">
-<div class="header"><h1>Deal Confirmation</h1></div>
-<div class="deal-details">
-  <p><strong>Deal ID:</strong> ${d.dealId || 'N/A'}</p>
-  <p><strong>Amount:</strong> ${d.amount || 'N/A'}</p>
-  <p><strong>Currency:</strong> ${d.currency || 'N/A'}</p>
-  <p><strong>Rate:</strong> ${d.rate || 'N/A'}</p>
-  <p><strong>Date:</strong> ${d.date || new Date().toLocaleDateString()}</p>
-</div>
-</div></body></html>`;
+        <div class="title-section">
+          <h1>CONSTANCIA DE DISPOSICIÓN DE LINEA DE SERVICIO </h1>
+          <p><strong>LEMAD CAPITAL S.A.P.I. DE C.V.</strong>LEMAD CAPITAL S.A.P.I. DE C.V. RFC: LCA220601H50 PEDRO RAMIREZ VAZQUEZ 200-11 PISO 1 INT. A SAN PEDRO GARZA GARCÍA, N.L. Teléfono: 81-20-80-90-56</p>
+           <a href="www.lemadcapital.com">www.lemadcapital.com</a>
+        </div>
+
+        <table class="instructions-table table-green">
+          <thead><tr><th colspan="2">I. DATOS DE IDENTIFICACIÓN DEL ACREDITADO</th></tr></thead>
+          <tbody>
+            <tr><td class="label-cell">Nombre:</td><td>${d.clientName}</td></tr>
+            <tr><td class="label-cell">Domicilio:</td><td>${d.clientAddress}</td></tr>
+            <tr><td class="label-cell">RFC:</td><td>${d.clientRFC}</td></tr>
+          </tbody>
+        </table>
+
+        <table class="instructions-table table-orange">
+          <thead><tr><th colspan="2">II. DATOS DE IDENTIFICACIÓN DEL ACREDITANTE</th></tr></thead>
+          <tbody>
+            <tr><td class="label-cell">Razón Social:</td><td>LEMAD CAPITAL, S.A.P.I DE C.V., SOFOM, E.N.R.</td></tr>
+            <tr><td class="label-cell">Domicilio:</td><td>PEDRO RAMIREZ VAZQUEZ 200-11 PISO 1 INT. A SAN PEDRO GARZA GARCÍA, N.L.</td></tr>
+          </tbody>
+        </table>
+
+        <table class="instructions-table table-grey">
+          <thead><tr><th colspan="4">III. INFORMACIÓN DE LA DISPOSICIÓN</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="label-cell">Operación:</td><td>${d.dealNumber}</td>
+              <td class="label-cell">Solicitud:</td><td>${d.requestDate}</td>
+            </tr>
+            <tr>
+              <td class="label-cell">Monto:</td><td colspan="3">${d.buyAmount} (${d.buyAmountString})</td>
+            </tr>
+            <tr>
+              <td class="label-cell">Vencimiento:</td><td>${d.dueDate}</td>
+              <td class="label-cell">Tipo de cambio:</td><td>${d.exchangeRate}</td>
+            </tr>
+            <tr>
+              <td class="label-cell">Monto a Pagar:</td><td colspan="3"><strong>$ ${d.payAmount} ${d.payAmountString}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table class="instructions-table table-grey">
+          <thead><tr><th colspan="2">IV. CUENTA DEL ACREDITADO (RECEPCIÓN DE RECURSOS)</th></tr></thead>
+          <tbody>
+            <tr><td class="label-cell">Banco:</td><td>${d.bankName}</td></tr>
+            <tr><td class="label-cell">CLABE:</td><td>${d.clabe}</td></tr>
+            <tr><td class="label-cell">Beneficiario:</td><td>${d.beneficiary}</td></tr>
+          </tbody>
+        </table>
+
+        <table class="instructions-table table-orange">
+          <thead><tr><th colspan="2">V. CUENTA DEL ACREDITANTE (PAGO DE LIQUIDACIÓN)</th></tr></thead>
+          <tbody>
+            <tr><td class="label-cell">Banco:</td><td>BANCREA</td></tr>
+            <tr><td class="label-cell">CLABE:</td><td>${d.myClabe}</td></tr>
+            <tr><td class="label-cell">Referencia:</td><td>${d.dealNumber}</td></tr>
+          </tbody>
+        </table>
+
+        <div class="legal-message">
+          <p>La presente Constancia de Disposición forma parte del Contrato de Línea de Servicio celebrado con Sunem Capital, S.A.P.I. de C.V., SOFOM, E.N.R. La recepción constituye aceptación de los términos establecidos.</p>
+        </div>
+
+        <footer class="page-footer">
+          WWW.LEMADCAPITAL.COM | TEL: 81-20-80-90-56
+        </footer>
+
+      </div>
+    </body>
+    </html>`;
   }
 }

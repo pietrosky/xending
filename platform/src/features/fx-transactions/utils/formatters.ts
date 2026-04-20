@@ -22,7 +22,7 @@ export function formatCurrency(amount: number, currency: 'USD' | 'MXN'): string 
   return `${currency} ${formatted}`;
 }
 
-export function amountToWords(amount: number, currency: 'MXN' | 'USD') {
+export function amountToWords(amount: number, currency: 'MXN' | 'USD', format: 'single' | 'fullName') {
   const [intPart, decPart] = amount.toFixed(2).split('.');
 
   const integer = Number(intPart);
@@ -30,14 +30,17 @@ export function amountToWords(amount: number, currency: 'MXN' | 'USD') {
 
   const words = toWords.convert(integer);
 
-  if (currency === 'MXN') {
-    return `${words} pesos ${cents}/100`; //Formato de word
+  const dictionary = {
+    "USD": {
+      "single": "dollar",
+      "fullName": "Dolares Americanos"
+    },
+    "MXN": {
+      "single": "pesos",
+      "fullName": "Pesos Mexicanos"
+    }
   }
 
-  if (currency === 'USD') {
-    return `${words} ${cents}/100  dólares americanos`; // el ejemplo del word no tenia centavos, preguntar.
-  }
-
-  return words;
+  return `${words} ${cents}/100  ${dictionary[currency][format] ?? 'unidad de modena'}`;
   
 }

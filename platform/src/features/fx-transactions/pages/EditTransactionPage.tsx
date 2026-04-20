@@ -59,51 +59,74 @@ export function EditTransactionPage() {
     return <div className="text-center py-20 text-sm text-destructive">Transacción no encontrada.</div>;
   }
 
-  async function handleGenerateHTML(transactionId: string) {
+  // TODO: dejar mas prolijo
+  function construirDealData(tx: FXTransaction, company: CompanyFX | null, piAccount: PaymentInstructionAccount | null) {
+    const payAmount = (Number(tx?.quantity) * Number(tx?.markup_rate))
+    const buyAmount = tx?.quantity
+    return {
+      // TRANSACTION
+      dealNumber: tx?.folio,
+      reference: tx?.folio,
+      buyCurrency: tx?.buys_currency,
+      quantity: tx?.quantity,
+      buyAmount: formatCurrency(buyAmount, tx?.buys_currency),
+      buyAmountString: amountToWords(buyAmount, tx?.buys_currency, 'fullName'),
+      baseRate: tx?.base_rate,
+      exchangeRate: Number(tx?.markup_rate).toFixed(2),
+      payCurrency: tx?.pays_currency,
+      currency: tx?.pays_currency,
+      payAmount: formatCurrency(payAmount, tx?.pays_currency),
+      payAmountString: amountToWords(payAmount ,tx?.pays_currency, 'fullName'),
+      status: tx?.status,
+      requestDate: new Date(tx?.created_at).toLocaleDateString('es-MX'),
+      dueDate: new Date(tx?.created_at).toLocaleDateString('es-MX'),
+
+      // COMPANY
+      clientName: company?.legal_name?.toString(),
+      clientAddress: [company?.address.street + ' ' + company?.address.city + ' ' + company?.address.state + ' ' +company?.address?.zip + ' ' + (company?.address?.country || '')],
+      beneficiary: company?.legal_name?.toString(),
+      bankName: company?.payment_accounts?.[0]?.bank_name,
+      clabe: company?.payment_accounts?.[0]?.clabe,
+      clientRFC: company?.rfc,
+
+      // PAYMENTINSTRUCTIONACCOUNT
+      myBankName: piAccount?.bank_name,
+      myClabe: piAccount?.account_number,
+
+      // OTROS
+      financingTerm: '1 Dia',
+      valueDate: new Date().toLocaleDateString('es-MX'),
+      amountToReceive: tx?.quantity.toString(),
+      myPaymentMethod: 'SPEI',
+    };
+  }
+
+  function descargarHtml(template: 'resumen' | 'constancia', dealData: any, transactionId: string) {
+    const html = TemplateService.generateHTML(template, dealData);
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+      
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `transaction-${transactionId}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+      
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  }
+
+  async function handleGenerateHTML(transactionId: string, template: 'resumen' | 'constancia') {
     try {
-      const payAmount = (Number(tx?.quantity) * Number(tx?.markup_rate))
-      const buyAmount = tx?.quantity
-      const htmlDealData = {
-        buyCurrency: tx?.buys_currency,
-        buyAmount: formatCurrency(buyAmount, tx?.buys_currency),
-        buyAmountString: amountToWords(buyAmount, tx?.buys_currency),
-        financingTerm: '1 Dia', // TODO: Falta definir
-        exchangeRate: tx?.markup_rate.toPrecision(4),
-        clientName: company?.legal_name?.toString(),
-        payAmount: formatCurrency(payAmount, tx?.pays_currency),
-        payAmountString: amountToWords(payAmount ,tx?.pays_currency),//payAmount,
-        currency: tx?.pays_currency,
-        valueDate: new Date().toLocaleDateString('es-MX'),
-        amountToReceive: tx?.quantity.toString(),
-        beneficiary: company?.legal_name?.toString(),
-        bankName: company?.payment_accounts?.[0]?.bank_name,
-        clabe: company?.payment_accounts?.[0]?.clabe,
-        reference: tx?.folio,
-        dealNumber: tx?.folio,
-        clientAddress: [company?.address.street + ' ' + company?.address.city + ' ' + company?.address.state + ' ' +company?.address?.zip + ' ' + (company?.address?.country || '')],
-        payCurrency: tx?.pays_currency,
-        myBankName: piAccount?.bank_name,
-        myClabe: piAccount?.account_number,
-        myPaymentMethod: 'SPEI', // TODO: Falta definir
-      };
-        
-      const html = TemplateService.generateHTML('xending', htmlDealData);
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `transaction-${transactionId}.html`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      setTimeout(() => URL.revokeObjectURL(url), 100);
+      if (!tx) return;
+      const dealData = construirDealData(tx, company, piAccount)
+      descargarHtml(template, dealData, transactionId);
     } catch (error) {
       console.error('Error generating HTML:', error);
       alert('Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   }
+  
   // Extra content: authorize button + proof upload
   const extraContent = (
     <div className="space-y-4">
@@ -113,20 +136,17 @@ export function EditTransactionPage() {
       <div className="flex gap-2 flex-col sm:flex-row">
         <button
           type="button"
-          onClick={() => handleGenerateHTML(tx.id)}
+          onClick={() => handleGenerateHTML(tx.id, 'resumen')}
           className="flex-1 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
         >
           Resumen Operacion
         </button>
         <button
           type="button"
-          onClick={() => {
-            // TODO: Implementar segunda func
-            alert('Todavia no creo el html');
-          }}
-          className="flex-1 px-4 py-2 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/90 transition-colors"
+          onClick={() => handleGenerateHTML(tx.id, 'constancia')}
+          className="flex-1 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
         >
-          Constancia de disposicion
+          Resumen Operacion
         </button>
       </div>
     </div>
