@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { generatePaymentOrderPDFFromTemplate } from '../services/pdfService';
+import { generatePDFFromTemplate } from '../services/pdfService';
 import type { FXTransaction } from '../types/transaction.types';
 import type { CompanyFX, PaymentAccount } from '../types/company-fx.types';
 import type { PaymentInstructionAccount } from '../../payment-instructions/types/payment-instruction.types';
@@ -27,7 +27,7 @@ export function PaymentOrderPDF({ transaction, company, paymentAccount, piAccoun
   async function handleDownload() {
     setLoading(true);
     try {
-      await generatePaymentOrderPDFFromTemplate(transaction, company, paymentAccount, piAccount);
+      await generatePDFFromTemplate('xending-compact', transaction, company, paymentAccount, piAccount);
     } finally {
       setLoading(false);
     }

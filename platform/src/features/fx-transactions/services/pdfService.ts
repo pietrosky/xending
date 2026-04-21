@@ -14,6 +14,15 @@ import type { CompanyFX, PaymentAccount } from '../types/company-fx.types';
 import type { PaymentInstructionAccount } from '../../payment-instructions/types/payment-instruction.types';
 import type { CompanyAddress } from '../../onboarding/types/company.types';
 import { invertRate, computePays } from '../utils/fxConversion';
+import { amountToWords } from '../utils/formatters';
+
+export type PDFTemplate =
+  | 'monex'
+  | 'xending'
+  | 'xending-compact'
+  | 'generic'
+  | 'xending-resume'
+  | 'xending-constancia';
 
 const PDF_GENERATOR_URL =
   import.meta.env.VITE_PDF_GENERATOR_URL ?? 'http://localhost:3002';
@@ -72,6 +81,19 @@ function buildDealData(
     payCurrency: transaction.pays_currency,
     payAmount: paysAmount.toLocaleString('en-US', { minimumFractionDigits: 2 }),
     totalDue: paysAmount.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+
+    // faltantes para resumen / constancia
+    clientRFC: company.rfc,
+    requestDate: new Date(transaction.created_at).toLocaleDateString('es-MX'),
+    dueDate: new Date(transaction.created_at).toLocaleDateString('es-MX'),
+    buyAmountString: amountToWords(transaction.quantity, transaction.buys_currency, 'fullName'),
+    payAmountString: amountToWords(paysAmount, transaction.pays_currency, 'fullName'),
+    currency: transaction.pays_currency,
+    valueDate: new Date().toLocaleDateString('es-MX'),
+    amountToReceive: transaction.quantity.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+    financingTerm: '1 Dia',
+    myPaymentMethod: 'SPEI',
+
     // Payment instructions — from PI account (pi_accounts table)
     accountNumber1: piAccount?.account_number ?? '',
     accountName1: piAccount?.account_name ?? '',
@@ -80,6 +102,7 @@ function buildDealData(
     bankName1: piAccount?.bank_name ?? '',
     bankAddress1: piAccount?.bank_address ?? '',
     byOrderOf1: company.legal_name,
+
     // Beneficiary — where Xending sends the bought currency
     beneficiaryAccountNumber: paymentAccount.clabe ? formatClabe(paymentAccount.clabe) : '',
     beneficiaryAccountName: company.legal_name,
@@ -89,8 +112,8 @@ function buildDealData(
 
 // ─── Server-side PDF generation ──────────────────────────────────────
 
-async function generatePDFFromServer(dealData: Record<string, unknown>): Promise<Blob> {
-  const res = await fetch(`${PDF_GENERATOR_URL}/generate-pdf/xending-compact`, {
+async function generatePDFFromServer(dealData: Record<string, unknown>, template: PDFTemplate): Promise<Blob> {
+  const res = await fetch(`${PDF_GENERATOR_URL}/generate-pdf/${template}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dealData),
@@ -112,7 +135,8 @@ async function generatePDFFromServer(dealData: Record<string, unknown>): Promise
  *
  * Falls back to a client-side print window if the server is unreachable.
  */
-export async function generatePaymentOrderPDFFromTemplate(
+export async function generatePDFFromTemplate(
+  template: PDFTemplate,
   transaction: FXTransaction,
   company: CompanyFX,
   paymentAccount: PaymentAccount,
@@ -121,11 +145,11 @@ export async function generatePaymentOrderPDFFromTemplate(
   const dealData = buildDealData(transaction, company, paymentAccount, piAccount);
 
   try {
-    const blob = await generatePDFFromServer(dealData);
+    const blob = await generatePDFFromServer(dealData, template);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `deal-confirmation-xending-${dealData.dealNumber || 'unknown'}.pdf`;
+    a.download = `deal-confirmation-${template}-${dealData.dealNumber || 'unknown'}.pdf`;
     document.body.appendChild(a);
     a.click();
     // Cleanup
@@ -135,13 +159,7 @@ export async function generatePaymentOrderPDFFromTemplate(
     }, 100);
   } catch (err) {
     console.warn('fx-pdf-generator unavailable, falling back to print window:', err);
-    // Lazy-load fallback to avoid bundling unused HTML template code
     const { openFallbackPrintWindow } = await import('./pdfFallback');
-    openFallbackPrintWindow(dealData);
+    openFallbackPrintWindow(dealData, template);
   }
 }
-
-/**
- * Legacy alias — kept for backward compatibility.
- */
-export const generatePaymentOrderPDF = generatePaymentOrderPDFFromTemplate;

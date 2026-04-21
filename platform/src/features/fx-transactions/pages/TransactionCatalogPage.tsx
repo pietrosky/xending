@@ -10,7 +10,7 @@ import { TransactionCatalogTable } from '../components/TransactionCatalogTable';
 import { CancelTransactionModal } from '../components/CancelTransactionModal';
 import { RevertCancelModal } from '../components/RevertCancelModal';
 import { getCompanyFXById } from '../services/companyServiceFX';
-import { generatePaymentOrderPDFFromTemplate } from '../services/pdfService';
+import { generatePDFFromTemplate } from '../services/pdfService';
 import { getPaymentAccountById } from '../../payment-instructions/services/paymentAccountService';
 import type { FXTransactionSummary } from '../types/transaction.types';
 
@@ -34,7 +34,7 @@ export function TransactionCatalogPage() {
       const piAccount = tx.pi_account_id
         ? await getPaymentAccountById(tx.pi_account_id)
         : null;
-      await generatePaymentOrderPDFFromTemplate(tx, company, paymentAccount, piAccount);
+      await generatePDFFromTemplate('xending-compact', tx, company, paymentAccount, piAccount);
     } catch { /* non-critical */ }
   }
 
