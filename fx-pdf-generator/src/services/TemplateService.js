@@ -798,7 +798,7 @@ class TemplateService {
 
         <div class="title-section">
           <h1>CONSTANCIA DE DISPOSICIÓN DE LINEA DE SERVICIO </h1>
-          <p><strong>LEMAD CAPITAL S.A.P.I. DE C.V.</strong>LEMAD CAPITAL S.A.P.I. DE C.V. RFC: LCA220601H50 PEDRO RAMIREZ VAZQUEZ 200-11 PISO 1 INT. A SAN PEDRO GARZA GARCÍA, N.L. Teléfono: 81-20-80-90-56</p>
+          <p><strong>LEMAD CAPITAL S.A.P.I. DE C.V.</strong> RFC: LCA220601H50 PEDRO RAMIREZ VAZQUEZ 200-11 PISO 1 INT. A SAN PEDRO GARZA GARCÍA, N.L. Teléfono: 81-20-80-90-56</p>
            <a href="www.lemadcapital.com">www.lemadcapital.com</a>
         </div>
 
@@ -858,11 +858,11 @@ class TemplateService {
         </table>
 
         <div class="legal-message">
-          <p>La presente Constancia de Disposición forma parte del Contrato de Línea de Servicio celebrado con Sunem Capital, S.A.P.I. de C.V., SOFOM, E.N.R. La recepción constituye aceptación de los términos establecidos.</p>
+          <p>La presente Constancia de Disposición forma parte del Contrato de Línea de Servicio celebrado con LEMAD CAPITAL, S.A.P.I de C.V., SOFOM, E.R.R. La recepción constituye aceptación de los términos establecidos.</p>
         </div>
 
         <footer class="page-footer">
-          WWW.LEMADCAPITAL.COM | TEL: 81-20-80-90-56
+          <a href="www.lemadcapital.com">www.lemadcapital.com</a> | TEL: 81-20-80-90-56
         </footer>
 
       </div>
@@ -893,7 +893,7 @@ static generateResumenHTML(dealData) {
 
           <div class="col-center">${dealData.exchangeRate}</div>
 
-          <div class="col-right">${dealData.clientName} pagará<br>$${dealData.payAmount} (${dealData.payAmountString})</div>
+          <div class="col-right">${dealData.clientName} pagará en la fecha acordada: ${dealData.tradeDate}<br>$${dealData.payAmount} (${dealData.payAmountString})</div>
         </div>
   </div>`;
 
@@ -969,7 +969,7 @@ static generateResumenHTML(dealData) {
 
         <div class="post-tablas">
           <p><strong><i>Instrucciones de cobro de transaccion: ${dealData.dealNumber}</i></strong></p>
-          <p><strong>El cliente deberá realizar el pago por la cantidad de ${dealData.payAmount} ${dealData.payCurrency} a las siguientes instrucciones:</strong></p>
+          <p><strong>El cliente deberá realizar el pago en la fecha acordada por la cantidad de ${dealData.payAmount} ${dealData.payCurrency} a las siguientes instrucciones:</strong></p>
           <p>Nombre: <i>LEMAD CAPITAL S.A.P.I. DE C.V. SOFOM E.N.R.</i><br></p>
           <p>Banco: <i>${dealData.bankName1}</i> / CLABE INTERBANCARIA: <i>${dealData.accountNumber1}</i> / Metodo: <i>${dealData.myPaymentMethod}</i> / Referencia de pago: ${dealData.dealNumber}</p>
         </div>
