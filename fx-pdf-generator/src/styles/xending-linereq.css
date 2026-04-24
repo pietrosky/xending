@@ -1,4 +1,14 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+}
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -6,22 +16,28 @@ body {
   line-height: 1.3;
   color: #2c3e50;
   background: white;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .container {
-  width: 100%;
-  max-width: 210mm;
+  width: 194mm;
+  max-width: 194mm;
+  min-width: 194mm;
   margin: 0 auto;
   padding: 7mm 8mm;
+  overflow: hidden;
 }
 
 .header-wrapper {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 12px;
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 3px solid #00d4aa;
+  page-break-inside: avoid;
 }
 
 .logo-section {
@@ -43,6 +59,8 @@ body {
 .logo-svg {
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.15));
 }
 
@@ -50,9 +68,11 @@ body {
   font-size: 15px;
   font-weight: 600;
   color: #2c3e50;
-  font-family: 'Arial', sans-serif;
+  font-family: Arial, sans-serif;
   line-height: 1;
   margin-top: 10px;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .custom-logo {
@@ -69,11 +89,14 @@ body {
 }
 
 .header-text {
+  flex: 1 1 auto;
   text-align: right;
   font-size: 10.5px;
   color: #7f8c8d;
   line-height: 1.6;
   max-width: 55%;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .page-footer {
@@ -83,6 +106,9 @@ body {
   text-align: center;
   font-size: 10.5px;
   color: #7f8c8d;
+  page-break-inside: avoid;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .page-footer a {
@@ -96,12 +122,16 @@ body {
   margin-bottom: 6px;
   text-align: center;
   text-transform: uppercase;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .title-section h1 {
   margin-bottom: 6px;
   font-size: 13px;
   color: #334155;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .title-section p {
@@ -130,11 +160,13 @@ body {
 .section-table {
   margin: 4px 0 10px 0;
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 10.5px;
   border: 1px solid #e9ecef;
   border-radius: 6px;
   overflow: hidden;
+  page-break-inside: avoid;
 }
 
 .section-table thead tr th {
@@ -144,11 +176,21 @@ body {
   font-size: 11px;
   letter-spacing: 0.3px;
   color: white;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
-.thead-green  { background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%); }
-.thead-orange { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); }
-.thead-slate  { background: linear-gradient(135deg, #475569 0%, #334155 100%); }
+.thead-green {
+  background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%);
+}
+
+.thead-orange {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+}
+
+.thead-slate {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+}
 
 .section-table tbody tr {
   border-bottom: 1px solid #e9ecef;
@@ -158,26 +200,45 @@ body {
   border-bottom: none;
 }
 
-.section-table tbody tr:nth-child(odd)  { background: white; }
-.section-table tbody tr:nth-child(even) { background: #f4f4f4; }
+.section-table tbody tr:nth-child(odd) {
+  background: white;
+}
+
+.section-table tbody tr:nth-child(even) {
+  background: #f4f4f4;
+}
 
 .section-table td {
   padding: 5px 8px;
   vertical-align: middle;
   line-height: 1.4;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .label-cell {
   font-weight: 600;
   color: #475569;
-  white-space: nowrap;
-  width: 1%;
+  white-space: normal;
+  width: 32mm;
+  max-width: 32mm;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.field-line,
+.field-filled,
+.field-wide {
+  display: inline-block;
+  max-width: 100%;
+  border-bottom: 1px solid #aaa;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .field-line {
-  border-bottom: 1px solid #aaa;
   min-width: 140px;
-  display: inline-block;
 }
 
 .check-group {
@@ -185,37 +246,56 @@ body {
   flex-direction: column;
   gap: 6px;
   padding: 8px 12px;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .check-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  min-height: 16px;
+  max-width: 100%;
   font-size: 11px;
   color: #2c3e50;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .checkbox {
   width: 13px;
   height: 13px;
+  min-width: 13px;
+  min-height: 13px;
+  max-width: 13px;
+  max-height: 13px;
+  flex: 0 0 13px;
+  display: inline-block;
   border: 1.5px solid #475569;
   border-radius: 2px;
-  flex-shrink: 0;
+  background: #ffffff;
+  box-sizing: border-box;
+  margin-top: 1px;
 }
 
 .moneda-row {
   display: flex;
-  gap: 24px;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: flex-start;
+  max-width: 100%;
   font-size: 11px;
 }
 
 .moneda-option {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   font-weight: 600;
   color: #2c3e50;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .legal-message {
@@ -223,6 +303,8 @@ body {
   font-size: 10.5px;
   color: #475569;
   line-height: 1.5;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .signature-section {
@@ -231,11 +313,13 @@ body {
   margin-top: 20px;
   margin-bottom: 16px;
   gap: 24px;
+  page-break-inside: avoid;
 }
 
 .signature-box {
   flex: 1;
   text-align: center;
+  min-width: 0;
 }
 
 .signature-line {
@@ -244,17 +328,21 @@ body {
   padding-top: 4px;
   font-size: 10px;
   color: #475569;
-}
-
-.section-table,
-.page-footer,
-.header-wrapper {
-  page-break-inside: avoid;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* ── PRINT ── */
 @media print {
-  @page { size: letter; margin: 8mm 10mm; }
+  @page {
+    size: letter;
+    margin: 8mm 10mm;
+  }
+
+  html,
+  body {
+    width: 100%;
+  }
 
   body {
     font-size: 12px;
@@ -262,8 +350,11 @@ body {
   }
 
   .container {
+    width: 100%;
     max-width: 100%;
+    min-width: 0;
     padding: 5mm 6mm;
+    overflow: hidden;
   }
 
   .header-wrapper {
@@ -287,6 +378,7 @@ body {
   }
 
   .section-table {
+    table-layout: fixed;
     font-size: 10px;
     margin-bottom: 6px;
   }
@@ -294,6 +386,22 @@ body {
   .section-table th,
   .section-table td {
     padding: 3px 6px;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .label-cell {
+    white-space: normal;
+  }
+
+  .checkbox {
+    width: 13px;
+    height: 13px;
+    min-width: 13px;
+    min-height: 13px;
+    max-width: 13px;
+    max-height: 13px;
+    flex: 0 0 13px;
   }
 
   .legal-message {

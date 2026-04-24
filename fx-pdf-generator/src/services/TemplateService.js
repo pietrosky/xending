@@ -318,7 +318,7 @@ class TemplateService {
 
           <!-- Deal header info -->
           <div class="deal-header">
-            <div class="deal-number">Deal No. ${dealData.transaction?.folio || 'XG-SPOT-001'}</div>
+            <div class="deal-number">Deal No. ${dealData.transaction?.folio}</div>
             <div class="contact-info">
               <span>www.xendinglobal.com</span>
               <span>T: 8119124842</span>
@@ -336,17 +336,17 @@ class TemplateService {
             <div class="left-column">
               <div class="field-row">
                 <span class="label">Client:</span>
-                <span class="value">${dealData.company?.legal_name || 'IMPORTADORA MEXICANA SA DE CV'}</span>
+                <span class="value">${dealData.company?.legal_name}</span>
               </div>
             </div>
             <div class="right-column">
               <div class="field-row">
                 <span class="label">Trade Date:</span>
-                <span class="value">${dealData.transaction?.created_at || '29/12/2025'}</span>
+                <span class="value">${dealData.transaction?.created_at}</span>
               </div>
               <div class="field-row">
                 <span class="label">Deal Type:</span>
-                <span class="value">${dealData.company?.deal_type || 'Spot'}</span>
+                <span class="value">${dealData.company?.deal_type}</span>
               </div>
             </div>
           </div>
@@ -356,43 +356,23 @@ class TemplateService {
             transaction DETAILS
           </div>
 
-          ${dealData.transaction?.markup_rate ? `
-          <!-- Versión SIN tipo de cambio - Mantener formato de tabla -->
-          <div class="transaction-table">
-            <div class="transaction-header">
-              <div class="col-left">${dealData.company?.legal_name || 'IMPORTADORA MEXICANA SA DE CV'}<br>Buys</div>
-              <div class="col-center">Exchange<br>Rate</div>
-              <div class="col-right">${dealData.company?.legal_name || 'IMPORTADORA MEXICANA SA DE CV'}<br>Pays</div>
-            </div>
-            <div class="transaction-row">
-              <div class="col-left">${dealData.transaction?.buys_currency || 'USD'} ${dealData.transaction?.quantity || '100,000.00'}</div>
-              <div class="col-center">1</div>
-              <div class="col-right">${dealData.transaction?.pays_currency || 'USD'} ${dealData.transaction?.pays_amount || '100,000.00'}</div>
-            </div>
-            <div class="total-row">
-              <div class="total-label">Total Due (${dealData.transaction?.pays_currency || 'USD'}):</div>
-              <div class="total-amount">${dealData.transaction?.pays_amount|| '100,000.00'}</div>
-            </div>
-          </div>
-          ` : `
           <!-- Versión CON tipo de cambio -->
           <div class="transaction-table">
             <div class="transaction-header">
-              <div class="col-left">${dealData.company?.legal_name || 'IMPORTADORA MEXICANA SA DE CV'}<br>Buys</div>
+              <div class="col-left">${dealData.company?.legal_name}<br>Buys</div>
               <div class="col-center">Exchange<br>Rate</div>
-              <div class="col-right">${dealData.company?.legal_name || 'IMPORTADORA MEXICANA SA DE CV'}<br>Pays</div>
+              <div class="col-right">${dealData.company?.legal_name}<br>Pays</div>
             </div>
             <div class="transaction-row">
-              <div class="col-left">${dealData.transaction?.buys_currency || 'USD'} ${dealData.transaction?.quantity || '100,000.00'}</div>
-              <div class="col-center">${dealData.transaction?.markup_rate || '17.8500'}</div>
-              <div class="col-right">${dealData.transaction?.pays_currency || 'MXN'} ${dealData.transaction?.pays_amount || '1,785,000.00'}<br><span class="fee-text">${dealData.feeText || 'MXN 0.00 (Xending Fee)'}</span></div>
+              <div class="col-left">${dealData.transaction?.buys_currency} ${dealData.transaction?.quantity}</div>
+              <div class="col-center">${dealData.transaction?.markup_rate}</div>
+              <div class="col-right">${dealData.transaction?.pays_currency} ${dealData.transaction?.pays_amount}<br><span class="fee-text">${dealData.feeText}</span></div>
             </div>
             <div class="total-row">
-              <div class="total-label">Total Due (${dealData.transaction?.pays_currency || 'MXN'}):</div>
-              <div class="total-amount">${dealData.transaction?.pays_amount  || '1,787,500.00'}</div>
+              <div class="total-label">Total Due (${dealData.transaction?.pays_currency}):</div>
+              <div class="total-amount">${dealData.transaction?.pays_amount}</div>
             </div>
           </div>
-          `}
 
           <!-- Payment instructions -->
           <div class="payment-banner">
@@ -401,16 +381,16 @@ class TemplateService {
 
           <div class="payment-section">
             <div class="payment-block">
-              <div class="payment-header">${dealData.company?.legal_name || 'IMPORTADORA MEXICANA SA DE CV'}</div>
+              <div class="payment-header">${dealData.company?.legal_name}</div>
               <div class="payment-details">
                 ${dealData.transaction?.markup_rate ? `
                 <p>to pay <strong>Xending Capital</strong></p>
                 <p>by Electronic Wire transfer</p>
-                <p>on <strong>${dealData.transaction?.created_at || '29/12/2025'}</strong> to:</p>
+                <p>on <strong>${dealData.transaction?.created_at}</strong> to:</p>
                 ` : `
-                <p>to pay <strong>Xending Capital ${dealData.transaction?.pays_currency || 'MXN'}</strong></p>
-                <p><strong>${dealData.transaction?.pays_amount || '1,787,500.00'}</strong> by Electronic Wire</p>
-                <p>transfer on <strong>${dealData.transaction?.created_at || '29/12/2025'}</strong> to:</p>
+                <p>to pay <strong>Xending Capital ${dealData.transaction?.pays_currency}</strong></p>
+                <p><strong>${dealData.transaction?.pays_amount}</strong> by Electronic Wire</p>
+                <p>transfer on <strong>${dealData.transaction?.created_at}</strong> to:</p>
                 `}
                 <br>
                 <p>Payment must be received for</p>
@@ -421,31 +401,31 @@ class TemplateService {
               <div class="bank-info">
                 <div class="field-row">
                   <span class="label">Account Number:</span>
-                  <span class="value">${dealData.piAccount?.account_number || 'MX98765432109876543210'}</span>
+                  <span class="value">${dealData.piAccount?.account_number}</span>
                 </div>
                 <div class="field-row">
                   <span class="label">Account Name:</span>
-                  <span class="value">${dealData.piAccount?.account_name || 'Xending Capital Payments'}</span>
+                  <span class="value">${dealData.piAccount?.account_name}</span>
                 </div>
                 <div class="field-row">
                   <span class="label">Account Address:</span>
-                  <span class="value">${dealData.piAccount?.bank_address || 'Torre Xending, Av. Reforma 123, CDMX, Mexico'}</span>
+                  <span class="value">${dealData.piAccount?.bank_address}</span>
                 </div>
                 <div class="field-row">
                   <span class="label">SWIFT:</span>
-                  <span class="value">${dealData.piAccount?.swift_code || 'XENDMX22'}</span>
+                  <span class="value">${dealData.piAccount?.swift_code}</span>
                 </div>
                 <div class="field-row">
                   <span class="label">Bank Name:</span>
-                  <span class="value">${dealData.piAccount?.bank_name || 'Banco Xending Mexico'}</span>
+                  <span class="value">${dealData.piAccount?.bank_name}</span>
                 </div>
                 <div class="field-row">
                   <span class="label">Bank Address:</span>
-                  <span class="value">${dealData.piAccount?.bank_address || 'Ciudad de Mexico, Mexico'}</span>
+                  <span class="value">${dealData.piAccount?.bank_address}</span>
                 </div>
                 <div class="field-row">
                   <span class="label">By Order Of:</span>
-                  <span class="value"> ${dealData.company?.legal_name || 'IMPORTADORA MEXICANA SA DE CV'}</span>
+                  <span class="value"> ${dealData.company?.legal_name}</span>
                 </div>
               </div>
             </div>
@@ -462,10 +442,10 @@ class TemplateService {
               <div class="payment-header">Xending Capital</div>
               <div class="payment-details">
                 ${dealData.transaction?.markup_rate ? `
-                <p>Amount <strong>${dealData.transaction?.buys_currency || 'USD'} ${dealData.transaction?.quantity || '100,000.00'})</strong></p>
+                <p>Amount <strong>${dealData.transaction?.buys_currency} ${dealData.transaction?.quantity})</strong></p>
                 <p>by Wire transfer to:</p>
                 ` : `
-                <p>will pay <strong>${dealData.transaction?.buys_currency || 'USD'} ${dealData.transaction?.quantity|| '100,000.00'}) </strong></p>
+                <p>will pay <strong>${dealData.transaction?.buys_currency} ${dealData.transaction?.quantity}) </strong></p>
                 <p>by Electronic Wire transfer to:</p>
                 <br>
                 <p><strong>Beneficiary Account</strong></p>
@@ -480,23 +460,23 @@ class TemplateService {
                 </div>
                 <div class="field-row">
                   <span class="label">Account Name:</span>
-                  <span class="value">${dealData.company?.legal_name || ''}</span>
+                  <span class="value">${dealData.company?.legal_name}</span>
                 </div>
                 <div class="field-row">
                   <span class="label">Account Address:</span>
-                  <span class="value">${dealData.company?.address || ''}</span>
+                  <span class="value">${dealData.company?.address}</span>
                 </div>
                 <div class="field-row">
                   <span class="label">SWIFT:</span>
-                  <span class="value">${dealData.piAccount?.swift_code || ''}</span>
+                  <span class="value">${dealData.piAccount?.swift_code}</span>
                 </div>
                 <div class="field-row">
                   <span class="label">Bank Name:</span>
-                  <span class="value">${dealData.paymentAccount?.bank_name || ''}</span>
+                  <span class="value">${dealData.paymentAccount?.bank_name}</span>
                 </div>
                 <div class="field-row">
                   <span class="label">Bank Address:</span>
-                  <span class="value">${dealData.paymentAccount?.bank_address || ''}</span>
+                  <span class="value">${dealData.paymentAccount?.bank_address}</span>
                 </div>
               </div>
             </div>
@@ -999,13 +979,6 @@ class TemplateService {
       width: '50px',
       height: '50px',
     });
-
-    const field = (value) =>
-      `<span class="field-filled">${value || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}</span>`;
- 
-    const fieldWide = (value) =>
-      `<span class="field-filled field-wide">${value || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}</span>`;
- 
     return `<!DOCTYPE html>
       <html>
       <head>
@@ -1047,31 +1020,31 @@ class TemplateService {
             <tbody>
               <tr>
                 <td class="label-cell">Razón Social:</td>
-                <td>${field(dealData.company.legal_name)}</td>
+                <td>${dealData.company.legal_name}</td>
                 <td class="label-cell">RFC:</td>
-                <td>${field(dealData.company.rfc)}</td>
+                <td>${dealData.company.rfc}</td>
               </tr>
               <tr>
                 <td class="label-cell">Fecha de Constitución:</td>
-                <td>${field(dealData.company.incorporation_date)}</td>
+                <td>${dealData.company.incorporation_date}</td>
                 <td class="label-cell">Giro o Actividad:</td>
-                <td>${field(dealData.company.business_activity)}</td>
+                <td>${dealData.company.business_activity}</td>
               </tr>
               <tr>
                 <td class="label-cell">Dirección Fiscal:</td>
-                <td>${field(dealData.company.address)}</td>
+                <td>${dealData.company.address}</td>
                 <td class="label-cell">Dirección Operativa:</td>
-                <td>${field(dealData.company.address)}</td>
+                <td>${dealData.company.address}</td>
               </tr>
               <tr>
                 <td class="label-cell">Teléfono:</td>
-                <td>${field(dealData.company.phone)}</td>
+                <td>${dealData.company.phone}</td>
                 <td class="label-cell">Correo electrónico:</td>
-                <td>${field(dealData.company.contact_email)}</td>
+                <td>${dealData.company.contact_email}</td>
               </tr>
               <tr>
                 <td class="label-cell">Nombre de Representante Legal:</td>
-                <td colspan="3">${fieldWide(dealData.company.contact_name || dealData.company.owner_name)}</td>
+                <td colspan="3">${dealData.company.contact_name || dealData.company.owner_name}</td>
               </tr>
             </tbody>
           </table>
@@ -1089,7 +1062,7 @@ class TemplateService {
                     <div class="check-item"><div class="checkbox"></div> Línea de Servicio Intradía</div>
                     <div class="check-item">
                       <div class="checkbox"></div>
-                      Otros: &nbsp;${fieldWide('')}
+                      Otros:}
                     </div>
                   </div>
                 </td>
@@ -1102,9 +1075,9 @@ class TemplateService {
             <tbody>
               <tr>
                 <td class="label-cell">Monto Anual de Operación:</td>
-                <td>${field(dealData.company.total_quantity)}</td>
+                <td>${dealData.company.total_quantity}</td>
                 <td class="label-cell">Monto Estimado de la Línea:</td>
-                <td>${field('')}</td>
+                <td></td>
               </tr>
               <tr>
                 <td class="label-cell">Moneda requerida:</td>
@@ -1117,11 +1090,11 @@ class TemplateService {
               </tr>
               <tr>
                 <td class="label-cell">Plazo Máximo de la Línea:</td>
-                <td colspan="3">${fieldWide('')}</td>
+                <td colspan="3"></td>
               </tr>
               <tr>
                 <td class="label-cell">Destino general de los recursos:</td>
-                <td colspan="3">${fieldWide('')}</td>
+                <td colspan="3"></td>
               </tr>
             </tbody>
           </table>
