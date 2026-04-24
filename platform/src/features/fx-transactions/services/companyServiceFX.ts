@@ -153,19 +153,27 @@ export async function getCompanyFXById(id: string): Promise<CompanyFX | null> {
   // Fetch primary contact (email + name)
   let contactEmail = '';
   let contactName = '';
+  let contactPhone = '';
   const { data: contacts } = await supabase
     .from('cs_company_contacts')
-    .select('contact_type, contact_value, contact_name, is_primary')
+    .select('contact_type, contact_value, contact_name')
     .eq('company_id', id)
-    .eq('contact_type', 'email')
-    .eq('is_primary', true);
+    .in('contact_type', ['email', 'phone'])
 
   if (contacts) {
-    const primary = (contacts as unknown as Array<{ contact_value: string; contact_name: string | null }>)[0];
-    if (primary) {
-      contactEmail = primary.contact_value ?? '';
-      contactName = primary.contact_name ?? '';
-    }
+    const rows = contacts as unknown as Array<{
+      contact_type: string;
+      contact_value: string;
+      contact_name: string | null;
+      is_primary: boolean;
+    }>;
+
+    const email = rows.find(c => c.contact_type === 'email');
+    const phone = rows.find(c => c.contact_type === 'phone');
+
+    contactEmail = email?.contact_value ?? '';
+    contactName  = email?.contact_name  ?? '';
+    contactPhone = phone?.contact_value ?? '';
   }
 
   return {
@@ -173,6 +181,7 @@ export async function getCompanyFXById(id: string): Promise<CompanyFX | null> {
     payment_accounts: (!accountsError && accounts ? accounts : []) as PaymentAccount[],
     contact_email: contactEmail,
     contact_name: contactName,
+    phone: contactPhone
   } as CompanyFX;
 }
 

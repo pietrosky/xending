@@ -99,7 +99,9 @@ body {
 }
 
 .title-section h1 {
-  margin-bottom: 13px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #334155;
 }
 
 .title-section p {
@@ -108,57 +110,143 @@ body {
 
 .title-section a {
   color: #00d4aa;
+  text-decoration: none;
 }
 
-.legal-message {
-  padding: 20px 0;
-  font-size: 12px;
-  color: #475569;
-  line-height: 1.6;
+.date-line {
+  text-align: right;
+  font-size: 11px;
+  margin-bottom: 8px;
+  padding-right: 4px;
+  color: #334155;
 }
 
-.instructions-table {
-  margin: 0 0 12px 0;
+.date-line span {
+  border-bottom: 1px solid #aaa;
+  display: inline-block;
+  min-width: 160px;
+}
+
+.section-table {
+  margin: 4px 0 10px 0;
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
+  font-size: 10.5px;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
   overflow: hidden;
 }
 
-.instructions-table th {
-  padding: 7px 10px;
-  text-align: left;
+.section-table thead tr th {
+  padding: 5px 8px;
+  text-align: center;
   font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.3px;
   color: white;
 }
 
-.instructions-table td {
-  padding: 5px 10px;
-  text-align: left;
-  vertical-align: top;
-}
+.thead-green  { background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%); }
+.thead-orange { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); }
+.thead-slate  { background: linear-gradient(135deg, #475569 0%, #334155 100%); }
 
-.instructions-table tbody tr {
+.section-table tbody tr {
   border-bottom: 1px solid #e9ecef;
 }
 
-.instructions-table tbody tr:nth-child(odd)  { background: white; }
-.instructions-table tbody tr:nth-child(even) { background: #f0f0f0; }
+.section-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.section-table tbody tr:nth-child(odd)  { background: white; }
+.section-table tbody tr:nth-child(even) { background: #f4f4f4; }
+
+.section-table td {
+  padding: 5px 8px;
+  vertical-align: middle;
+  line-height: 1.4;
+}
 
 .label-cell {
   font-weight: 600;
   color: #475569;
-  width: 120px;
   white-space: nowrap;
+  width: 1%;
 }
 
-.instructions-table.table-green thead  { background: linear-gradient(135deg, #00d4aa 0%, #008b8b 100%); }
-.instructions-table.table-grey thead   { background: linear-gradient(135deg, #475569 0%, #334155 100%); }
-.instructions-table.table-orange thead { background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 100%); }
+.field-line {
+  border-bottom: 1px solid #aaa;
+  min-width: 140px;
+  display: inline-block;
+}
 
-.instructions-table,
+.check-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #2c3e50;
+}
+
+.checkbox {
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid #475569;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.moneda-row {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  font-size: 11px;
+}
+
+.moneda-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.legal-message {
+  padding: 10px 0 8px;
+  font-size: 10.5px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.signature-section {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+  margin-bottom: 16px;
+  gap: 24px;
+}
+
+.signature-box {
+  flex: 1;
+  text-align: center;
+}
+
+.signature-line {
+  border-top: 1px solid #475569;
+  margin-top: 40px;
+  padding-top: 4px;
+  font-size: 10px;
+  color: #475569;
+}
+
+.section-table,
 .page-footer,
 .header-wrapper {
   page-break-inside: avoid;
@@ -170,7 +258,7 @@ body {
 
   body {
     font-size: 12px;
-    line-height: 1.3;
+    line-height: 1.25;
   }
 
   .container {
@@ -198,27 +286,26 @@ body {
     margin-bottom: 6px;
   }
 
+  .section-table {
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
+
+  .section-table th,
+  .section-table td {
+    padding: 3px 6px;
+  }
+
   .legal-message {
-    padding: 12px 0;
-    font-size: 10.5px;
-    line-height: 1.5;
+    font-size: 10px;
+    line-height: 1.25;
+    padding-top: 8px;
+    padding-bottom: 6px;
   }
 
   .page-footer {
+    font-size: 10.5px;
     margin-top: 6px;
     padding-top: 6px;
-    font-size: 10.5px;
   }
-
-  .instructions-table {
-    margin-bottom: 8px;
-    font-size: 10.3px;
-    border: 1px solid #e9ecef;
-    page-break-inside: avoid;
-  }
-
-  .instructions-table th { padding: 5px 8px; }
-  .instructions-table td { padding: 3px 8px; }
-
-  .label-cell { width: 110px; }
 }

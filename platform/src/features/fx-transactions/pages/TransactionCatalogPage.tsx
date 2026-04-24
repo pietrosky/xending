@@ -34,10 +34,10 @@ export function TransactionCatalogPage() {
       const piAccount = tx.pi_account_id
         ? await getPaymentAccountById(tx.pi_account_id)
         : null;
-      await generatePDFFromTemplate('xending-compact', tx, company, paymentAccount, piAccount);
+      const params = { transaction: tx, company, paymentAccount, piAccount } 
+      await generatePDFFromTemplate('xending-compact', params);
     } catch { /* non-critical */ }
   }
-
 
   function handleCancelRequest(txId: string) {
     const tx = transactions?.find((t) => t.id === txId);

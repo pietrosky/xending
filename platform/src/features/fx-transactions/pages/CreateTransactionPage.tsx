@@ -56,11 +56,13 @@ export function CreateTransactionPage() {
       const piAccount = createdTx.pi_account_id
         ? await getPaymentAccountById(createdTx.pi_account_id)
         : null;
-      await generatePDFFromTemplate('xending-compact', createdTx, company, paymentAccount, piAccount);
+       const params = { transaction: createdTx, company, paymentAccount, piAccount }
+      await generatePDFFromTemplate('xending-compact', params);
     } catch {
       // PDF generation is non-critical
     }
   }
+
 
   // ─── Success state ───────────────────────────────────────────────
 

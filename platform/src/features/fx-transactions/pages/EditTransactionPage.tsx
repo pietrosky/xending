@@ -101,11 +101,11 @@ export function EditTransactionPage() {
 
     try {
       await generatePDFFromTemplate(
-        template,
-        tx,
+        template, {
+        transaction: tx,
         company,
         paymentAccount,
-        piAccount
+        piAccount }
       );
     } catch (error) {
       console.error('Error generando PDF:', error);

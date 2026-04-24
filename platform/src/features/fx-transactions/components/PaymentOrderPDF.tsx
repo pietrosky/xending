@@ -23,11 +23,12 @@ export interface PaymentOrderPDFProps {
 export function PaymentOrderPDF({ transaction, company, paymentAccount, piAccount }: PaymentOrderPDFProps) {
   const hasFolio = Boolean(transaction.folio);
   const [loading, setLoading] = useState(false);
-
+  const params = { transaction, company, paymentAccount, piAccount } 
   async function handleDownload() {
     setLoading(true);
     try {
-      await generatePDFFromTemplate('xending-compact', transaction, company, paymentAccount, piAccount);
+      
+      await generatePDFFromTemplate('xending-compact', params);
     } finally {
       setLoading(false);
     }
