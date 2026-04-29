@@ -839,7 +839,7 @@ class TemplateService {
         </table>
 
         <div class="legal-message">
-          <p>La presente Constancia de Disposición forma parte del Contrato de Línea de Servicio celebrado con LEMAD CAPITAL, S.A.P.I de C.V., SOFOM, E.R.R. La recepción constituye aceptación de los términos establecidos.</p>
+          <p>La presente Constancia de Disposición forma parte del Contrato de Línea de Servicio celebrado con LEMAD CAPITAL, S.A.P.I de C.V., SOFOM, E.N.R. La recepción constituye aceptación de los términos establecidos.</p>
         </div>
 
         <footer class="page-footer">
