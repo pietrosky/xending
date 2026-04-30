@@ -118,7 +118,7 @@ function buildDealData(params?: PDFBuildParams | null): Record<string, unknown> 
       contact_email: company.contact_email,
       contact_name: company.contact_name,
       owner_name: company.owner_name,
-      total_quantity: company.total_quantity,
+      total_quantity: company.total_quantity ?? '',
       last_transaction_at: company.last_transaction_at,
       status: String(company.status),
     };

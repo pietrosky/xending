@@ -629,14 +629,8 @@ export function CompanyFormFX({
         <button
           type="button"
           onClick={() => void handleGeneratePDF('xending-linereq')}
-          className="flex-1 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" >
+          className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" >
           Linea de servicio
-        </button>
-        <button
-          type="button"
-          //onClick={() => void handleGeneratePDF('xending')}
-          className="flex-1 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" >
-          ...
         </button>
       </div>
     </div>}

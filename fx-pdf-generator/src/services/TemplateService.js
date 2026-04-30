@@ -1062,7 +1062,7 @@ class TemplateService {
                     <div class="check-item"><div class="checkbox"></div> Línea de Servicio Intradía</div>
                     <div class="check-item">
                       <div class="checkbox"></div>
-                      Otros:}
+                      Otros:
                     </div>
                   </div>
                 </td>
