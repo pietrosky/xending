@@ -186,4 +186,4 @@ npm run cleanup
 💾 **Memoria**: 60% menos uso  
 ⚡ **Concurrencia**: 3 PDFs simultáneos sin problemas
 
-..
+...
