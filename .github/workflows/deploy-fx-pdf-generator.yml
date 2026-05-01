@@ -16,12 +16,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Verify secret exists
+        env:
+          PWD_CHECK: ${{ secrets.PDF_SERVER_PASSWORD }}
+        run: |
+          if [ -z "$PWD_CHECK" ]; then
+            echo "::error::PDF_SERVER_PASSWORD secret is not set."
+            echo "Go to repo Settings → Secrets and variables → Actions → New repository secret"
+            echo "Create a secret named PDF_SERVER_PASSWORD with your server root password."
+            exit 1
+          fi
+          echo "Secret is configured."
+
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: 24.199.103.222
           username: root
           password: ${{ secrets.PDF_SERVER_PASSWORD }}
+          port: 22
+          timeout: 30s
+          command_timeout: 10m
           script_stop: true
           script: |
             set -e
