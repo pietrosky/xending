@@ -28,6 +28,21 @@ jobs:
           fi
           echo "Secret is configured."
 
+      - name: Package fx-pdf-generator
+        run: tar -czf /tmp/fx-pdf-generator.tar.gz -C fx-pdf-generator .
+
+      - name: Copy artifact to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 24.199.103.222
+          username: root
+          password: ${{ secrets.PDF_SERVER_PASSWORD }}
+          port: 22
+          timeout: 30s
+          source: /tmp/fx-pdf-generator.tar.gz
+          target: /tmp
+          strip_components: 0
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -42,8 +57,6 @@ jobs:
             set -e
 
             APP_DIR="/opt/fx-pdf-generator"
-            REPO_URL="https://github.com/${{ github.repository }}.git"
-            BRANCH="master"
 
             # --- Node.js 20 ---
             echo "==> Ensuring Node.js is installed..."
@@ -60,26 +73,12 @@ jobs:
               pm2 startup systemd -u root --hp /root
             fi
 
-            # --- Pull latest code ---
-            echo "==> Syncing repository..."
-            if [ -d "$APP_DIR/.git" ]; then
-              cd "$APP_DIR"
-              git fetch origin "$BRANCH"
-              git reset --hard "origin/$BRANCH"
-            else
-              rm -rf "$APP_DIR"
-              git clone --branch "$BRANCH" --depth 1 "$REPO_URL" "$APP_DIR"
-            fi
-
-            # --- Resolve working directory ---
-            if [ -f "$APP_DIR/fx-pdf-generator/package.json" ]; then
-              WORK_DIR="$APP_DIR/fx-pdf-generator"
-            elif [ -f "$APP_DIR/package.json" ]; then
-              WORK_DIR="$APP_DIR"
-            else
-              echo "ERROR: package.json not found" && exit 1
-            fi
-            cd "$WORK_DIR"
+            # --- Deploy artifact ---
+            echo "==> Deploying new version..."
+            mkdir -p "$APP_DIR"
+            tar -xzf /tmp/fx-pdf-generator.tar.gz -C "$APP_DIR"
+            rm -f /tmp/fx-pdf-generator.tar.gz
+            cd "$APP_DIR"
 
             # --- Install production dependencies ---
             echo "==> Installing npm dependencies..."
@@ -97,8 +96,8 @@ jobs:
 
             # --- Environment file ---
             echo "==> Setting up environment..."
-            if [ ! -f "$WORK_DIR/.env" ]; then
-              printf 'PORT=3001\nNODE_ENV=production\n' > "$WORK_DIR/.env"
+            if [ ! -f "$APP_DIR/.env" ]; then
+              printf 'PORT=3001\nNODE_ENV=production\n' > "$APP_DIR/.env"
               echo "    Created default .env — edit on server if you need extra vars"
             fi
 
@@ -107,7 +106,7 @@ jobs:
             pm2 delete fx-pdf-generator 2>/dev/null || true
             pm2 start server.js \
               --name fx-pdf-generator \
-              --cwd "$WORK_DIR" \
+              --cwd "$APP_DIR" \
               --max-memory-restart 512M \
               --env production
             pm2 save
