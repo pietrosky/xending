@@ -29,7 +29,7 @@ jobs:
           echo "Secret is configured."
 
       - name: Package fx-pdf-generator
-        run: tar -czf /tmp/fx-pdf-generator.tar.gz -C fx-pdf-generator .
+        run: tar -czf fx-pdf-generator.tar.gz -C fx-pdf-generator .
 
       - name: Copy artifact to server
         uses: appleboy/scp-action@v0.1.7
@@ -39,9 +39,8 @@ jobs:
           password: ${{ secrets.PDF_SERVER_PASSWORD }}
           port: 22
           timeout: 30s
-          source: /tmp/fx-pdf-generator.tar.gz
+          source: fx-pdf-generator.tar.gz
           target: /tmp
-          strip_components: 0
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
