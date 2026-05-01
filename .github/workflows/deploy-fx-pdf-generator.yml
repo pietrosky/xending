@@ -1,0 +1,101 @@
+name: Deploy fx-pdf-generator
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'fx-pdf-generator/**'
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 24.199.103.222
+          username: root
+          password: ${{ secrets.PDF_SERVER_PASSWORD }}
+          script_stop: true
+          script: |
+            set -e
+
+            APP_DIR="/opt/fx-pdf-generator"
+            REPO_URL="https://github.com/${{ github.repository }}.git"
+            BRANCH="master"
+
+            # --- Node.js 20 ---
+            echo "==> Ensuring Node.js is installed..."
+            if ! command -v node &> /dev/null; then
+              curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+              apt-get install -y nodejs
+            fi
+            echo "    Node $(node -v) / npm $(npm -v)"
+
+            # --- PM2 process manager ---
+            echo "==> Ensuring PM2 is installed..."
+            if ! command -v pm2 &> /dev/null; then
+              npm install -g pm2
+              pm2 startup systemd -u root --hp /root
+            fi
+
+            # --- Pull latest code ---
+            echo "==> Syncing repository..."
+            if [ -d "$APP_DIR/.git" ]; then
+              cd "$APP_DIR"
+              git fetch origin "$BRANCH"
+              git reset --hard "origin/$BRANCH"
+            else
+              rm -rf "$APP_DIR"
+              git clone --branch "$BRANCH" --depth 1 "$REPO_URL" "$APP_DIR"
+            fi
+
+            # --- Resolve working directory ---
+            if [ -f "$APP_DIR/fx-pdf-generator/package.json" ]; then
+              WORK_DIR="$APP_DIR/fx-pdf-generator"
+            elif [ -f "$APP_DIR/package.json" ]; then
+              WORK_DIR="$APP_DIR"
+            else
+              echo "ERROR: package.json not found" && exit 1
+            fi
+            cd "$WORK_DIR"
+
+            # --- Install production dependencies ---
+            echo "==> Installing npm dependencies..."
+            npm ci --omit=dev
+
+            # --- Puppeteer / Chromium system libs ---
+            echo "==> Installing Chromium dependencies for Puppeteer..."
+            apt-get update -qq
+            apt-get install -y -qq --no-install-recommends \
+              ca-certificates fonts-liberation libasound2 libatk-bridge2.0-0 \
+              libatk1.0-0 libcups2 libdbus-1-3 libdrm2 libgbm1 libgtk-3-0 \
+              libnspr4 libnss3 libx11-xcb1 libxcomposite1 libxdamage1 \
+              libxrandr2 xdg-utils libxshmfence1 libglu1-mesa \
+              > /dev/null 2>&1 || true
+
+            # --- Environment file ---
+            echo "==> Setting up environment..."
+            if [ ! -f "$WORK_DIR/.env" ]; then
+              printf 'PORT=3001\nNODE_ENV=production\n' > "$WORK_DIR/.env"
+              echo "    Created default .env — edit on server if you need extra vars"
+            fi
+
+            # --- Restart with PM2 ---
+            echo "==> Restarting application with PM2..."
+            pm2 delete fx-pdf-generator 2>/dev/null || true
+            pm2 start server.js \
+              --name fx-pdf-generator \
+              --cwd "$WORK_DIR" \
+              --max-memory-restart 512M \
+              --env production
+            pm2 save
+
+            echo "==> Deployment complete!"
+            pm2 list
