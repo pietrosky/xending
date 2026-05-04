@@ -52,7 +52,6 @@ jobs:
 
             APP_DIR="/opt/fx-pdf-generator"
 
-            # --- Node.js 20 ---
             echo "==> Ensuring Node.js is installed..."
             if ! command -v node &> /dev/null; then
               curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
@@ -60,25 +59,21 @@ jobs:
             fi
             echo "    Node $(node -v) / npm $(npm -v)"
 
-            # --- PM2 process manager ---
             echo "==> Ensuring PM2 is installed..."
             if ! command -v pm2 &> /dev/null; then
               npm install -g pm2
               pm2 startup systemd -u root --hp /root
             fi
 
-            # --- Deploy artifact ---
             echo "==> Deploying new version..."
             mkdir -p "$APP_DIR"
             tar -xzf /root/fx-pdf-generator.tar.gz -C "$APP_DIR"
             rm -f /root/fx-pdf-generator.tar.gz
             cd "$APP_DIR"
 
-            # --- Install production dependencies ---
             echo "==> Installing npm dependencies..."
             npm ci --omit=dev
 
-            # --- Puppeteer / Chromium system libs ---
             echo "==> Installing Chromium dependencies for Puppeteer..."
             apt-get update -qq
             apt-get install -y -qq --no-install-recommends \
@@ -88,14 +83,12 @@ jobs:
               libxrandr2 xdg-utils libxshmfence1 libglu1-mesa \
               > /dev/null 2>&1 || true
 
-            # --- Environment file ---
             echo "==> Setting up environment..."
             if [ ! -f "$APP_DIR/.env" ]; then
               printf 'PORT=3001\nNODE_ENV=production\nALLOWED_ORIGINS=https://capital.xendinglobal.com\n' > "$APP_DIR/.env"
               echo "    Created default .env"
             fi
 
-            # --- Restart with PM2 ---
             echo "==> Restarting application with PM2..."
             pm2 delete fx-pdf-generator 2>/dev/null || true
             pm2 start server.js \
@@ -116,55 +109,9 @@ jobs:
           password: ${{ secrets.PDF_SERVER_PASSWORD }}
           port: 22
           timeout: 60s
-          command_timeout: 10m
+          command_timeout: 5m
           script_stop: false
           script: |
-            echo "==> Configuring Nginx..."
-            NGINX_DEFAULT="/etc/nginx/sites-available/default"
-            MARKER="# fx-pdf-generator-proxy"
-
-            # Check if we already added our location block
-            if grep -q "$MARKER" "$NGINX_DEFAULT" 2>/dev/null; then
-              echo "    Nginx location block already exists, skipping"
-              exit 0
-            fi
-
-            echo "    Adding fx-pdf-generator location to default site..."
-
-            # Backup the original
-            cp "$NGINX_DEFAULT" "$NGINX_DEFAULT.bak.$(date +%s)"
-
-            # Insert a location block before the last closing brace of the server block
-            # This adds /pdf/ proxy alongside the existing port 3000 app
-            sed -i '/^}/i \
-            \n    '"$MARKER"'\
-                location /pdf/ {\
-                    proxy_pass http://127.0.0.1:3001/;\
-                    proxy_http_version 1.1;\
-                    proxy_set_header Upgrade $http_upgrade;\
-                    proxy_set_header Connection '"'"'upgrade'"'"';\
-                    proxy_set_header Host $host;\
-                    proxy_set_header X-Real-IP $remote_addr;\
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\
-                    proxy_set_header X-Forwarded-Proto $scheme;\
-                    proxy_cache_bypass $http_upgrade;\
-                    proxy_read_timeout 120s;\
-                    proxy_send_timeout 120s;\
-                    client_max_body_size 20M;\
-                }' "$NGINX_DEFAULT"
-
-            echo "    Testing Nginx config..."
-            nginx -t 2>&1
-            if [ $? -ne 0 ]; then
-              echo "ERROR: Nginx config test failed, restoring backup..."
-              LATEST_BAK=$(ls -t "$NGINX_DEFAULT".bak.* 2>/dev/null | head -1)
-              if [ -n "$LATEST_BAK" ]; then
-                cp "$LATEST_BAK" "$NGINX_DEFAULT"
-                nginx -t 2>&1 && systemctl reload nginx
-              fi
-              exit 1
-            fi
-
-            systemctl reload nginx
-            echo "==> Nginx configured! App available at /pdf/ path"
-            echo "    Example: http://24.199.103.222/pdf/health"
+            echo "==> Running Nginx patch script..."
+            bash /opt/fx-pdf-generator/scripts/patch-nginx.sh 2>&1
+            echo "==> Done"
