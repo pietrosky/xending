@@ -37,37 +37,6 @@ jobs:
           sshpass -e scp -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
             /tmp/fx-pdf-generator.tar.gz root@24.199.103.222:/root/fx-pdf-generator.tar.gz
 
-      - name: Create Nginx config file
-        run: |
-          cat > /tmp/fx-pdf-generator-nginx.conf << 'NGINXEOF'
-          server {
-              listen 80;
-              server_name pdf.xending.com;
-
-              location / {
-                  proxy_pass http://127.0.0.1:3001;
-                  proxy_http_version 1.1;
-                  proxy_set_header Upgrade $http_upgrade;
-                  proxy_set_header Connection 'upgrade';
-                  proxy_set_header Host $host;
-                  proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                  proxy_set_header X-Forwarded-Proto $scheme;
-                  proxy_cache_bypass $http_upgrade;
-                  proxy_read_timeout 120s;
-                  proxy_send_timeout 120s;
-              }
-          }
-          NGINXEOF
-          echo "Nginx config file created"
-
-      - name: Upload Nginx config to server
-        env:
-          SSHPASS: ${{ secrets.PDF_SERVER_PASSWORD }}
-        run: |
-          sshpass -e scp -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
-            /tmp/fx-pdf-generator-nginx.conf root@24.199.103.222:/root/fx-pdf-generator-nginx.conf
-
       - name: Deploy app via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -151,55 +120,51 @@ jobs:
           script_stop: false
           script: |
             echo "==> Configuring Nginx..."
-            NGINX_CONF="/etc/nginx/sites-available/fx-pdf-generator"
+            NGINX_DEFAULT="/etc/nginx/sites-available/default"
+            MARKER="# fx-pdf-generator-proxy"
 
-            if [ -f "$NGINX_CONF" ]; then
-              echo "    Nginx config already exists, skipping"
+            # Check if we already added our location block
+            if grep -q "$MARKER" "$NGINX_DEFAULT" 2>/dev/null; then
+              echo "    Nginx location block already exists, skipping"
               exit 0
             fi
 
-            # Install nginx if missing
-            if ! command -v nginx > /dev/null 2>&1; then
-              echo "    Installing Nginx..."
-              apt-get update -qq
-              apt-get install -y -qq nginx
-            fi
+            echo "    Adding fx-pdf-generator location to default site..."
 
-            # Move the uploaded config into place
-            if [ -f /root/fx-pdf-generator-nginx.conf ]; then
-              cp /root/fx-pdf-generator-nginx.conf "$NGINX_CONF"
-              rm -f /root/fx-pdf-generator-nginx.conf
-            else
-              echo "ERROR: Nginx config file not found on server"
-              exit 1
-            fi
+            # Backup the original
+            cp "$NGINX_DEFAULT" "$NGINX_DEFAULT.bak.$(date +%s)"
 
-            # Enable the site
-            rm -f /etc/nginx/sites-enabled/default
-            ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/fx-pdf-generator
+            # Insert a location block before the last closing brace of the server block
+            # This adds /pdf/ proxy alongside the existing port 3000 app
+            sed -i '/^}/i \
+            \n    '"$MARKER"'\
+                location /pdf/ {\
+                    proxy_pass http://127.0.0.1:3001/;\
+                    proxy_http_version 1.1;\
+                    proxy_set_header Upgrade $http_upgrade;\
+                    proxy_set_header Connection '"'"'upgrade'"'"';\
+                    proxy_set_header Host $host;\
+                    proxy_set_header X-Real-IP $remote_addr;\
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\
+                    proxy_set_header X-Forwarded-Proto $scheme;\
+                    proxy_cache_bypass $http_upgrade;\
+                    proxy_read_timeout 120s;\
+                    proxy_send_timeout 120s;\
+                    client_max_body_size 20M;\
+                }' "$NGINX_DEFAULT"
 
             echo "    Testing Nginx config..."
             nginx -t 2>&1
             if [ $? -ne 0 ]; then
-              echo "ERROR: Nginx config test failed"
-              cat "$NGINX_CONF"
+              echo "ERROR: Nginx config test failed, restoring backup..."
+              LATEST_BAK=$(ls -t "$NGINX_DEFAULT".bak.* 2>/dev/null | head -1)
+              if [ -n "$LATEST_BAK" ]; then
+                cp "$LATEST_BAK" "$NGINX_DEFAULT"
+                nginx -t 2>&1 && systemctl reload nginx
+              fi
               exit 1
             fi
 
             systemctl reload nginx
-            echo "    Nginx reloaded with HTTP config"
-
-            # Issue SSL cert
-            echo "    Checking SSL certificate..."
-            if [ ! -f /etc/letsencrypt/live/pdf.xending.com/fullchain.pem ]; then
-              echo "    Issuing Let's Encrypt certificate..."
-              apt-get install -y -qq certbot python3-certbot-nginx 2>/dev/null || true
-              certbot --nginx -d pdf.xending.com \
-                --non-interactive --agree-tos --redirect \
-                --email admin@xending.com \
-                --cert-name pdf.xending.com 2>&1 || echo "WARNING: certbot failed — app runs on HTTP only"
-            else
-              echo "    SSL cert already exists"
-            fi
-
-            echo "==> Nginx setup complete!"
+            echo "==> Nginx configured! App available at /pdf/ path"
+            echo "    Example: http://24.199.103.222/pdf/health"
