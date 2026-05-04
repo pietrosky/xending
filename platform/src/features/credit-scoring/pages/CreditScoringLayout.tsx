@@ -37,8 +37,8 @@ export function CreditScoringLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     navigate('/login', { replace: true });
   }
 

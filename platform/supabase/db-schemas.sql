@@ -18,7 +18,7 @@ CREATE SCHEMA auth;
 
 CREATE SCHEMA extensions;
 
-
+CREATE SCHEMA public;
 --
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
 --

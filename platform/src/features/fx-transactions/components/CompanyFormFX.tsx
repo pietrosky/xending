@@ -14,11 +14,13 @@ import {
   RFC_4_REGEX,
 } from '../../credit-scoring/utils/inputMasks';
 import { DeleteAccountModal } from './DeleteAccountModal';
-import { postgrest } from '@/lib/postgrest';
+import { supabase } from '@/lib/supabase';
 import { MaskedInput } from './MaskedInput';
 import { useRFCValidation } from '../hooks/useRFCValidation';
 import type { CompanyFX, CreateCompanyFXInput } from '../types/company-fx.types';
 import type { CompanyAddress } from '../../onboarding/types/company.types';
+import { generatePDFFromTemplate, PDFTemplate } from '../services/pdfService';
+//import { c } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf';
 
 // ─── Props ───────────────────────────────────────────────────────────
 
@@ -136,7 +138,7 @@ export function CompanyFormFX({
       setRfc(initialData.rfc ?? '');
       setTradeName(initialData.trade_name ?? '');
       setBusinessActivity(initialData.business_activity ?? '');
-      setPhone((initialData.metadata as Record<string, string> | undefined)?.phone ?? '');
+      setPhone(initialData.phone ?? '');
       setContactEmail(initialData.contact_email ?? '');
       setContactName(initialData.contact_name ?? '');
       setAddress(initialData.address ?? { street: '', city: '', state: '', zip: '', country: 'México' });
@@ -155,7 +157,28 @@ export function CompanyFormFX({
   }, [mode, initialData]);
 
   const errors = validate(legalName, rfc, businessActivity, phone, contactEmail, address, clabes);
+  const handleGeneratePDF = async (template: PDFTemplate) => {
+    const company: Partial<CompanyFX> = {
+      id: initialData?.id ?? '',
+      incorporation_date: initialData?.incorporation_date ?? '',
+      phone: phone,
+      rfc: rfc.toUpperCase(),
+      legal_name: legalName.trim(),
+      business_activity: businessActivity.trim(),
+      address: address,
+      contact_email: contactEmail.trim(),
+      contact_name: contactName.trim(),
+      owner_name: owners,     
+    };
 
+  const params = { company };
+
+  try {
+    await generatePDFFromTemplate(template, params);
+  } catch (error) {
+    console.error('Error generando PDF:', error);
+  }
+};
   function handleBlur(field: string) {
     setTouched((prev) => ({ ...prev, [field]: true }));
   }
@@ -195,7 +218,7 @@ export function CompanyFormFX({
 
     if (deleteTarget.accountId) {
       // Soft delete in DB
-      await postgrest
+      await supabase
         .from('cs_company_payment_accounts')
         .update({ deleted: true, deleted_at: new Date().toISOString() })
         .eq('id', deleteTarget.accountId);
@@ -241,7 +264,6 @@ export function CompanyFormFX({
 
     onSubmit(input);
   }
-
   // ─── Styling helpers ─────────────────────────────────────────────
 
   const inputBase =
@@ -599,6 +621,19 @@ export function CompanyFormFX({
           + Agregar cuenta CLABE
         </button>
       </fieldset>
+      
+      {/* ─── Documentacion section ────────────────────────────────── */}
+      {<div className="rounded-lg border border-border p-4">
+      <p className="text-sm font-medium text-foreground mb-3">Documentación</p>
+      <div className="flex gap-2 flex-col sm:flex-row">
+        <button
+          type="button"
+          onClick={() => void handleGeneratePDF('xending-linereq')}
+          className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" >
+          Linea de servicio
+        </button>
+      </div>
+    </div>}
 
       {/* ─── Admin: Owner selector ────────────────────────────────── */}
       {isAdmin && (

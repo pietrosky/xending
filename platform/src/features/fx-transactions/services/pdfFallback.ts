@@ -6,6 +6,7 @@
  */
 
 import logoUrl from '../../../assets/logoxending.png';
+import {  type PDFTemplate } from '../services/pdfService';
 
 // ─── CSS (Xending) ──────────────────────────────────────────────────
 
@@ -197,8 +198,12 @@ ${beneficiarySection}
 
 // ─── Public ──────────────────────────────────────────────────────────
 
-export function openFallbackPrintWindow(dealData: Record<string, unknown>): void {
-  const html = buildXendingHTML(dealData);
+export function openFallbackPrintWindow(
+  dealData: Record<string, unknown>,
+  _template: PDFTemplate,
+): void {
+  const html = buildXendingHTML(dealData); // ACA FALTARIA HARDCODEAR EL RESUMEN Y CONSTANCIA POR SI CAE EN FALLBACK, pero no se si es lo ideal
+
   const printWindow = window.open('', '_blank', 'width=800,height=1100');
   if (!printWindow) {
     throw new Error('No se pudo abrir la ventana de impresión. Verifica que los popups estén habilitados.');

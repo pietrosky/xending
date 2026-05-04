@@ -10,7 +10,7 @@ import type {
  */
 export async function getPaymentAccounts(): Promise<PaymentInstructionAccount[]> {
   const { data, error } = await supabase
-    .from<PaymentInstructionAccount>('pi_accounts')
+    .from('pi_accounts')
     .select('*')
     .order('is_active', { ascending: false })
     .order('created_at', { ascending: false });
@@ -53,7 +53,7 @@ export async function createPaymentAccount(
     .single();
 
   if (insertError) {
-    // PostgREST returns 409 / code 23505 for unique constraint violations
+    // Supabase returns code 23505 for unique constraint violations
     if (insertError.code === '23505' || insertError.message?.includes('duplicate')) {
       throw new Error('Ya existe una cuenta con este número de cuenta');
     }

@@ -1,41 +1,77 @@
-/**
- * Local dev auth store — manages the current logged-in user.
- * Uses zustand for global state. No real auth — just picks from local_users.
- */
-
 import { create } from 'zustand';
+import type { Session, User } from '@supabase/supabase-js';
+import { supabase } from './supabase';
+import { getAuthRole, type AuthRole } from './roles';
 
 export interface LocalUser {
   id: string;
   email: string;
   full_name: string;
-  role: 'admin' | 'broker';
-  token: string;
+  role: AuthRole;
+  token?: string;
 }
 
 interface AuthState {
   user: LocalUser | null;
-  login: (user: LocalUser) => void;
-  logout: () => void;
+  session: Session | null;
+  loading: boolean;
+  setSession: (session: Session | null) => void;
+  logout: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'xending_auth_user';
+function getFullName(user: User): string {
+  const metadataName =
+    user.user_metadata?.full_name ??
+    user.user_metadata?.name ??
+    user.email;
 
-function loadUser(): LocalUser | null {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+  return typeof metadataName === 'string' && metadataName.trim()
+    ? metadataName
+    : 'Usuario';
+}
+
+function mapAuthUser(user: User | null | undefined): LocalUser | null {
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    email: user.email ?? '',
+    full_name: getFullName(user),
+    role: getAuthRole(user),
+  };
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: loadUser(),
-  login: (user) => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    set({ user });
+  user: null,
+  session: null,
+  loading: true,
+  setSession: (session) => {
+    set({
+      session,
+      user: mapAuthUser(session?.user),
+      loading: false,
+    });
   },
-  logout: () => {
-    sessionStorage.removeItem(STORAGE_KEY);
-    set({ user: null });
+  logout: async () => {
+    await supabase.auth.signOut();
+    set({ user: null, session: null, loading: false });
   },
 }));
+
+let authInitialized = false;
+
+export async function initializeAuthStore() {
+  if (authInitialized) return;
+  authInitialized = true;
+
+  try {
+    const { data } = await supabase.auth.getSession();
+    useAuthStore.getState().setSession(data.session);
+  } catch {
+    useAuthStore.getState().setSession(null);
+  }
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    useAuthStore.getState().setSession(session);
+  });
+}

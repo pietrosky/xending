@@ -19,6 +19,7 @@ export interface CompanyFX extends Company {
   owner_name?: string;
   total_quantity?: number;
   last_transaction_at?: string;
+  phone: string
 }
 
 export interface CreateCompanyFXInput {

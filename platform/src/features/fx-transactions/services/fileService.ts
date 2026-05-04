@@ -14,9 +14,6 @@ import { supabase } from '@/lib/supabase';
 export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
-// In-memory store for blob URLs during local dev session
-const localProofStore = new Map<string, string>();
-
 // ─── Validación ──────────────────────────────────────────────────────
 
 /**
@@ -58,19 +55,37 @@ export async function uploadProof(transactionId: string, file: File): Promise<st
     throw new Error(validation.error);
   }
 
-  const filePath = `${transactionId}/${file.name}`;
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'bin';
+  const safeName = file.name
+    .replace(/\.[^.]+$/, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'proof';
+  const filePath = `${transactionId}/${Date.now()}-${safeName}.${extension}`;
 
-  // Local dev: convert file to a blob URL that the browser can open directly
-  const blobUrl = URL.createObjectURL(file);
+  const { error: uploadError } = await supabase.storage
+    .from('fx-proofs')
+    .upload(filePath, file, {
+      contentType: file.type,
+      upsert: false,
+    });
 
-  // Store blob URL in a local map for persistence during session
-  localProofStore.set(filePath, blobUrl);
+  if (uploadError) {
+    throw new Error(`Error al subir comprobante: ${uploadError.message}`);
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from('fx-proofs')
+    .getPublicUrl(filePath);
+
+  const proofUrl = publicUrlData.publicUrl;
 
   // Update transaction with proof_url and status = 'completed'
   const { error: updateError } = await supabase
     .from('fx_transactions')
     .update({
-      proof_url: blobUrl,
+      proof_url: proofUrl,
       status: 'completed',
       updated_at: new Date().toISOString(),
     })
@@ -80,7 +95,7 @@ export async function uploadProof(transactionId: string, file: File): Promise<st
     throw new Error(`Error al actualizar transacción: ${updateError.message}`);
   }
 
-  return blobUrl;
+  return proofUrl;
 }
 
 // ─── Download ────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { generatePaymentOrderPDFFromTemplate } from '../services/pdfService';
+import { generatePDFFromTemplate } from '../services/pdfService';
 import type { FXTransaction } from '../types/transaction.types';
 import type { CompanyFX, PaymentAccount } from '../types/company-fx.types';
 import type { PaymentInstructionAccount } from '../../payment-instructions/types/payment-instruction.types';
@@ -23,11 +23,12 @@ export interface PaymentOrderPDFProps {
 export function PaymentOrderPDF({ transaction, company, paymentAccount, piAccount }: PaymentOrderPDFProps) {
   const hasFolio = Boolean(transaction.folio);
   const [loading, setLoading] = useState(false);
-
+  const params = { transaction, company, paymentAccount, piAccount } 
   async function handleDownload() {
     setLoading(true);
     try {
-      await generatePaymentOrderPDFFromTemplate(transaction, company, paymentAccount, piAccount);
+      
+      await generatePDFFromTemplate('xending-compact', params);
     } finally {
       setLoading(false);
     }

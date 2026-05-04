@@ -7,10 +7,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { getAuthRole, type AuthRole } from '@/lib/roles';
 
-type Role = 'admin' | 'broker';
-
-async function fetchUserRole(): Promise<Role> {
+async function fetchUserRole(): Promise<AuthRole> {
   const {
     data: { user },
     error,
@@ -18,11 +17,7 @@ async function fetchUserRole(): Promise<Role> {
 
   if (error || !user) throw new Error('No authenticated user');
 
-  const role = (user.app_metadata?.role ||
-    user.user_metadata?.role ||
-    'broker') as Role;
-
-  return role;
+  return getAuthRole(user);
 }
 
 export function useRole() {

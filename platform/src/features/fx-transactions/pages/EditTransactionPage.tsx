@@ -10,11 +10,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTransaction, useUpdateTransaction } from '../hooks/useTransactions';
 import { useRole } from '../hooks/useRole';
 import { getCompanyFXById } from '../services/companyServiceFX';
+import { getPaymentAccountById } from '@/features/payment-instructions/services/paymentAccountService';
+import type { PaymentAccount } from '../types/company-fx.types';
 import { TransactionForm } from '../components/TransactionForm';
 import { AuthorizeButton } from '../components/AuthorizeButton';
 import { ProofUpload } from '../components/ProofUpload';
+import { generatePDFFromTemplate, type PDFTemplate, } from '../services/pdfService';
 import type { CompanyFX } from '../types/company-fx.types';
 import type { CreateTransactionInput } from '../types/transaction.types';
+import type { PaymentInstructionAccount } from '../../payment-instructions/types/payment-instruction.types';
+
 
 export function EditTransactionPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,13 +28,50 @@ export function EditTransactionPage() {
   const { data: tx, isLoading: txLoading, refetch } = useTransaction(id);
   const updateMutation = useUpdateTransaction();
   const [company, setCompany] = useState<CompanyFX | null>(null);
-
-  // Load company data when transaction loads
+  const [paymentAccount, setPaymentAccount] = useState<PaymentAccount | null>(null);
+  const [piAccount, setPiAccount] = useState<PaymentInstructionAccount | null>(null);
+  
   useEffect(() => {
-    if (tx?.company_id) {
-      getCompanyFXById(tx.company_id).then((c) => setCompany(c));
+    if (!tx) {
+      setCompany(null);
+      setPaymentAccount(null);
+      setPiAccount(null);
+      return;
     }
-  }, [tx?.company_id]);
+
+    const loadRelatedData = async () => {
+      try {
+        if (tx.company_id) {
+          const companyData = await getCompanyFXById(tx.company_id);
+          setCompany(companyData);
+
+          const matchedPaymentAccount =
+            companyData?.payment_accounts?.find(
+              (account) => account.id === tx.payment_account_id
+            ) ?? null;
+
+          setPaymentAccount(matchedPaymentAccount);
+        } else {
+          setCompany(null);
+          setPaymentAccount(null);
+        }
+
+        if (tx.pi_account_id) {
+          const pi = await getPaymentAccountById(tx.pi_account_id);
+          setPiAccount(pi);
+        } else {
+          setPiAccount(null);
+        }
+      } catch (error) {
+        console.error('Error loading related transaction data:', error);
+        setCompany(null);
+        setPaymentAccount(null);
+        setPiAccount(null);
+      }
+    };
+
+    void loadRelatedData();
+  }, [tx]);
 
   function handleSubmit(input: CreateTransactionInput) {
     if (!id) return;
@@ -50,10 +92,47 @@ export function EditTransactionPage() {
   if (!tx) {
     return <div className="text-center py-20 text-sm text-destructive">Transacción no encontrada.</div>;
   }
+  
+  const handleGeneratePDF = async (template: PDFTemplate) => {
+    if (!tx || !company || !paymentAccount) {
+      console.warn('Faltan datos para generar el PDF');
+      return;
+    }
+
+    try {
+      await generatePDFFromTemplate(
+        template, {
+        transaction: tx,
+        company,
+        paymentAccount,
+        piAccount }
+      );
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+    }
+  };
 
   // Extra content: authorize button + proof upload
   const extraContent = (
     <div className="space-y-4">
+      {/* Documentation section */}
+    <div className="rounded-lg border border-border p-4">
+      <p className="text-sm font-medium text-foreground mb-3">Documentación</p>
+      <div className="flex gap-2 flex-col sm:flex-row">
+        <button
+          type="button"
+          onClick={() => void handleGeneratePDF('xending-resume')}
+          className="flex-1 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" >
+          Resumen Operación
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleGeneratePDF('xending-constancia')}
+          className="flex-1 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" >
+          Constancia
+        </button>
+      </div>
+    </div>
       {/* Authorize button for pending transactions */}
       {tx.status === 'pending' && isAdmin && (
         <div className="rounded-lg border border-border p-4">
