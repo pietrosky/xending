@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3002;
 
 // Middleware
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
   : undefined; // undefined = allow all (dev)
 app.use(cors(allowedOrigins ? { origin: allowedOrigins } : undefined));
 app.use(express.json({ limit: '10mb' }));

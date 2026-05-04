@@ -122,7 +122,7 @@ jobs:
             # --- Environment file ---
             echo "==> Setting up environment..."
             if [ ! -f "$APP_DIR/.env" ]; then
-              printf 'PORT=3001\nNODE_ENV=production\n' > "$APP_DIR/.env"
+              printf 'PORT=3001\nNODE_ENV=production\nALLOWED_ORIGINS=https://capital.xendinglobal.com\n' > "$APP_DIR/.env"
               echo "    Created default .env"
             fi
 
