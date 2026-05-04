@@ -9,6 +9,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { getAuthRole } from '@/lib/roles';
 import type {
   FXTransaction,
   FXTransactionSummary,
@@ -37,7 +38,7 @@ export interface TransactionGroups {
 export async function getTransactions(): Promise<FXTransactionSummary[]> {
   // Get current user for role-based filtering
   const { data: { user } } = await supabase.auth.getUser();
-  const role = user?.app_metadata?.role || user?.user_metadata?.role || 'broker';
+  const role = getAuthRole(user);
   const userId = user?.id;
 
   // 1. Fetch transactions (broker only sees their own)
@@ -72,7 +73,7 @@ export async function getTransactions(): Promise<FXTransactionSummary[]> {
     }
   }
 
-  // 4. Resolve user names from local_users
+  // 4. Resolve user names from Supabase Auth profiles
   const userMap = new Map<string, string>();
   const userIds = [
     ...new Set([
@@ -83,7 +84,7 @@ export async function getTransactions(): Promise<FXTransactionSummary[]> {
 
   if (userIds.length > 0) {
     const { data: users, error: usersError } = await supabase
-      .from('local_users')
+      .from('profiles')
       .select('id, full_name, email')
       .in('id', userIds);
 
@@ -121,7 +122,7 @@ export async function createTransaction(
 ): Promise<FXTransaction> {
   // Validate markup: brokers can't have negative markup
   const { data: { user } } = await supabase.auth.getUser();
-  const role = user?.app_metadata?.role || user?.user_metadata?.role || 'broker';
+  const role = getAuthRole(user);
   if (role !== 'admin' && input.markup_rate < input.base_rate) {
     throw new Error('Los brokers no pueden aplicar markup negativo');
   }
@@ -166,7 +167,7 @@ export async function authorizeTransaction(
     throw new Error('Permisos insuficientes: usuario no autenticado');
   }
 
-  const role = user.app_metadata?.role || user.user_metadata?.role || 'broker';
+  const role = getAuthRole(user);
   if (role !== 'admin') {
     throw new Error('Permisos insuficientes: solo el administrador puede autorizar transacciones');
   }
@@ -235,7 +236,7 @@ export async function updateTransaction(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) throw new Error('Usuario no autenticado');
 
-  const role = user.app_metadata?.role || user.user_metadata?.role || 'broker';
+  const role = getAuthRole(user);
 
   // Brokers can only edit pending transactions
   if (role !== 'admin') {
@@ -275,7 +276,7 @@ export async function cancelTransaction(transactionId: string): Promise<FXTransa
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) throw new Error('Usuario no autenticado');
 
-  const role = user.app_metadata?.role || user.user_metadata?.role || 'broker';
+  const role = getAuthRole(user);
 
   // Fetch current transaction
   const { data: current, error: fetchError } = await supabase
@@ -321,7 +322,7 @@ export async function revertCancelTransaction(transactionId: string): Promise<FX
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) throw new Error('Usuario no autenticado');
 
-  const role = user.app_metadata?.role || user.user_metadata?.role || 'broker';
+  const role = getAuthRole(user);
   if (role !== 'admin') throw new Error('Solo el administrador puede revertir cancelaciones');
 
   const { data, error } = await supabase

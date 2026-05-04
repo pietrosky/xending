@@ -1,23 +1,20 @@
-/**
- * LoginPage — Email + password login against local_users table.
- */
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore, type LocalUser } from '@/lib/authStore';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/lib/authStore';
 import logoSrc from '@/assets/logoxending.png';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { user, login } = useAuthStore();
+  const { user, loading: authLoading } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) navigate('/', { replace: true });
-  }, [user, navigate]);
+    if (!authLoading && user) navigate('/', { replace: true });
+  }, [authLoading, user, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,46 +22,29 @@ export function LoginPage() {
 
     const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail || !password) {
-      setError('Ingresa correo y contraseña');
+      setError('Ingresa correo y contrasena');
       return;
     }
 
     setLoading(true);
 
-    // Call PostgREST RPC login endpoint
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_POSTGREST_URL ?? 'http://localhost:55421'}/rpc/login`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
-          },
-          body: JSON.stringify({ email_input: trimmedEmail, password_input: password }),
-        },
-      );
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password,
+      });
 
-      setLoading(false);
-
-      if (!response.ok) {
-        setError('Correo o contraseña incorrectos');
+      if (signInError) {
+        setLoading(false);
+        setError('Correo o contrasena incorrectos');
         return;
       }
 
-      const result = await response.json();
-      const localUser: LocalUser = {
-        id: result.user.id,
-        email: result.user.email,
-        full_name: result.user.full_name,
-        role: result.user.role,
-        token: result.token,
-      };
-      login(localUser);
+      setLoading(false);
       navigate('/', { replace: true });
     } catch {
       setLoading(false);
-      setError('Error de conexión. Verifica que el servidor esté corriendo.');
+      setError('Error de conexion. Verifica que Supabase este corriendo.');
     }
   }
 
@@ -75,7 +55,7 @@ export function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <img src={logoSrc} alt="Xending Capital" className="h-12 mx-auto mb-4" />
-          <h1 className="text-2xl font-semibold text-foreground">Iniciar Sesión</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Iniciar Sesion</h1>
           <p className="text-sm text-muted-foreground mt-1">Ingresa tus credenciales para continuar</p>
         </div>
 
@@ -88,7 +68,7 @@ export function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div>
             <label htmlFor="login-email" className="block text-sm font-medium text-foreground mb-1">
-              Correo electrónico
+              Correo electronico
             </label>
             <input
               id="login-email"
@@ -104,7 +84,7 @@ export function LoginPage() {
 
           <div>
             <label htmlFor="login-password" className="block text-sm font-medium text-foreground mb-1">
-              Contraseña
+              Contrasena
             </label>
             <input
               id="login-password"
@@ -112,7 +92,7 @@ export function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={inputCls}
-              placeholder="••••••••"
+              placeholder="********"
               autoComplete="current-password"
             />
           </div>
@@ -123,7 +103,7 @@ export function LoginPage() {
             className="w-full py-2.5 rounded-lg text-sm font-medium text-white transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: 'hsl(213, 67%, 25%)' }}
           >
-            {loading ? 'Verificando...' : 'Iniciar Sesión'}
+            {loading ? 'Verificando...' : 'Iniciar Sesion'}
           </button>
         </form>
       </div>

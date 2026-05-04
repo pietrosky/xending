@@ -200,7 +200,7 @@ ${beneficiarySection}
 
 export function openFallbackPrintWindow(
   dealData: Record<string, unknown>,
-  template: PDFTemplate,
+  _template: PDFTemplate,
 ): void {
   const html = buildXendingHTML(dealData); // ACA FALTARIA HARDCODEAR EL RESUMEN Y CONSTANCIA POR SI CAE EN FALLBACK, pero no se si es lo ideal
 

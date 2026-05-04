@@ -5,6 +5,9 @@ import { ApplicationDetailPage } from '../credit-scoring/pages/ApplicationDetail
 /** Index route: admin sees dashboard, broker redirects to FX companies. */
 export function BrokerRedirect() {
   const user = useAuthStore((s) => s.user);
+  const loading = useAuthStore((s) => s.loading);
+
+  if (loading) return null;
   if (user?.role === 'broker') return <Navigate to="/fx/companies" replace />;
   return <ApplicationDetailPage />;
 }

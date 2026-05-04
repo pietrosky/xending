@@ -7,6 +7,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { getAuthRole } from '@/lib/roles';
 import type {
   CompanyFX,
   CreateCompanyFXInput,
@@ -28,7 +29,7 @@ function normalizeRfc(rfc: string): string {
 export async function getCompaniesFX(): Promise<CompanyFX[]> {
   // Get current user for role-based filtering
   const { data: { user } } = await supabase.auth.getUser();
-  const role = user?.app_metadata?.role || user?.user_metadata?.role || 'broker';
+  const role = getAuthRole(user);
   const userId = user?.id;
 
   // For brokers, first get their company IDs from cs_companies_owners
@@ -72,13 +73,13 @@ export async function getCompaniesFX(): Promise<CompanyFX[]> {
 
   const ownerList = (owners ?? []) as unknown as Array<{ company_id: string; user_id: string }>;
   if (!ownersError && ownerList.length > 0) {
-    // Resolve user IDs to names via local_users
+    // Resolve user IDs to names via Supabase Auth profiles
     const userIds = [...new Set(ownerList.map((o) => o.user_id).filter(Boolean))];
     const userNameMap = new Map<string, string>();
 
     if (userIds.length > 0) {
       const { data: users } = await supabase
-        .from('local_users')
+        .from('profiles')
         .select('id, full_name, email')
         .in('id', userIds);
 
@@ -195,7 +196,7 @@ export async function searchCompanies(query: string): Promise<CompanyFX[]> {
 
   // Get current user for role-based filtering
   const { data: { user } } = await supabase.auth.getUser();
-  const role = user?.app_metadata?.role || user?.user_metadata?.role || 'broker';
+  const role = getAuthRole(user);
   const userId = user?.id;
 
   // For brokers, restrict to their companies
@@ -449,7 +450,7 @@ export async function toggleCompanyStatus(
     throw new Error('Permisos insuficientes: usuario no autenticado');
   }
 
-  const role = user.app_metadata?.role || user.user_metadata?.role || 'broker';
+  const role = getAuthRole(user);
   if (role !== 'admin') {
     throw new Error('Permisos insuficientes: solo el administrador puede deshabilitar empresas');
   }

@@ -17,7 +17,7 @@ import { AuthorizeButton } from '../components/AuthorizeButton';
 import { ProofUpload } from '../components/ProofUpload';
 import { generatePDFFromTemplate, type PDFTemplate, } from '../services/pdfService';
 import type { CompanyFX } from '../types/company-fx.types';
-import type { CreateTransactionInput, FXTransaction } from '../types/transaction.types';
+import type { CreateTransactionInput } from '../types/transaction.types';
 import type { PaymentInstructionAccount } from '../../payment-instructions/types/payment-instruction.types';
 
 

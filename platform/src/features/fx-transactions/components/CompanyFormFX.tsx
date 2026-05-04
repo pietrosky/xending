@@ -14,7 +14,7 @@ import {
   RFC_4_REGEX,
 } from '../../credit-scoring/utils/inputMasks';
 import { DeleteAccountModal } from './DeleteAccountModal';
-import { postgrest } from '@/lib/postgrest';
+import { supabase } from '@/lib/supabase';
 import { MaskedInput } from './MaskedInput';
 import { useRFCValidation } from '../hooks/useRFCValidation';
 import type { CompanyFX, CreateCompanyFXInput } from '../types/company-fx.types';
@@ -218,7 +218,7 @@ export function CompanyFormFX({
 
     if (deleteTarget.accountId) {
       // Soft delete in DB
-      await postgrest
+      await supabase
         .from('cs_company_payment_accounts')
         .update({ deleted: true, deleted_at: new Date().toISOString() })
         .eq('id', deleteTarget.accountId);
