@@ -35,7 +35,7 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
           sshpass -e scp -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
-            /tmp/fx-pdf-generator.tar.gz root@24.199.103.222:/tmp/fx-pdf-generator.tar.gz
+            /tmp/fx-pdf-generator.tar.gz root@24.199.103.222:/root/fx-pdf-generator.tar.gz
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -70,8 +70,8 @@ jobs:
             # --- Deploy artifact ---
             echo "==> Deploying new version..."
             mkdir -p "$APP_DIR"
-            tar -xzf /tmp/fx-pdf-generator.tar.gz -C "$APP_DIR"
-            rm -f /tmp/fx-pdf-generator.tar.gz
+            tar -xzf /root/fx-pdf-generator.tar.gz -C "$APP_DIR"
+            rm -f /root/fx-pdf-generator.tar.gz
             cd "$APP_DIR"
 
             # --- Install production dependencies ---
