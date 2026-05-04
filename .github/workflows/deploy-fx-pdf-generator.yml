@@ -95,45 +95,70 @@ jobs:
               echo "    Created default .env — edit on server if you need extra vars"
             fi
 
-            # --- Nginx reverse proxy (first deploy only) ---
+            # --- Nginx reverse proxy + SSL (first deploy only) ---
             echo "==> Configuring Nginx..."
             NGINX_CONF="/etc/nginx/sites-available/fx-pdf-generator"
             if [ ! -f "$NGINX_CONF" ]; then
+
+              # Step 1: HTTP-only config so certbot can verify the domain
               printf '%s\n' \
                 'server {' \
                 '    listen 80;' \
                 '    server_name pdf.xending.com;' \
-                '    return 301 https://$host$request_uri;' \
-                '}' \
-                '' \
-                'server {' \
-                '    listen 443 ssl;' \
-                '    server_name pdf.xending.com;' \
-                '' \
-                '    ssl_certificate /etc/letsencrypt/live/pdf.xending.com/fullchain.pem;' \
-                '    ssl_certificate_key /etc/letsencrypt/live/pdf.xending.com/privkey.pem;' \
-                '    include /etc/letsencrypt/options-ssl-nginx.conf;' \
-                '    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;' \
-                '' \
-                '    client_max_body_size 20M;' \
                 '' \
                 '    location / {' \
                 '        proxy_pass http://127.0.0.1:3001;' \
-                '        proxy_http_version 1.1;' \
-                '        proxy_set_header Upgrade $http_upgrade;' \
-                '        proxy_set_header Connection '\''upgrade'\'';' \
-                '        proxy_set_header Host $host;' \
-                '        proxy_set_header X-Real-IP $remote_addr;' \
-                '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
-                '        proxy_set_header X-Forwarded-Proto $scheme;' \
-                '        proxy_cache_bypass $http_upgrade;' \
-                '        proxy_read_timeout 120s;' \
-                '        proxy_send_timeout 120s;' \
                 '    }' \
                 '}' > "$NGINX_CONF"
 
               ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/fx-pdf-generator
               nginx -t && systemctl reload nginx
+
+              # Step 2: Issue SSL cert if it doesn't exist yet
+              if [ ! -f /etc/letsencrypt/live/pdf.xending.com/fullchain.pem ]; then
+                echo "    Issuing Let's Encrypt certificate..."
+                apt-get install -y -qq certbot python3-certbot-nginx > /dev/null 2>&1 || true
+                certbot --nginx -d pdf.xending.com --non-interactive --agree-tos --redirect \
+                  --email admin@xending.com \
+                  --cert-name pdf.xending.com
+                echo "    SSL certificate issued and Nginx updated by certbot"
+              else
+                echo "    SSL cert already exists, applying full config..."
+                printf '%s\n' \
+                  'server {' \
+                  '    listen 80;' \
+                  '    server_name pdf.xending.com;' \
+                  '    return 301 https://$host$request_uri;' \
+                  '}' \
+                  '' \
+                  'server {' \
+                  '    listen 443 ssl;' \
+                  '    server_name pdf.xending.com;' \
+                  '' \
+                  '    ssl_certificate /etc/letsencrypt/live/pdf.xending.com/fullchain.pem;' \
+                  '    ssl_certificate_key /etc/letsencrypt/live/pdf.xending.com/privkey.pem;' \
+                  '    include /etc/letsencrypt/options-ssl-nginx.conf;' \
+                  '    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;' \
+                  '' \
+                  '    client_max_body_size 20M;' \
+                  '' \
+                  '    location / {' \
+                  '        proxy_pass http://127.0.0.1:3001;' \
+                  '        proxy_http_version 1.1;' \
+                  '        proxy_set_header Upgrade $http_upgrade;' \
+                  '        proxy_set_header Connection '\''upgrade'\'';' \
+                  '        proxy_set_header Host $host;' \
+                  '        proxy_set_header X-Real-IP $remote_addr;' \
+                  '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+                  '        proxy_set_header X-Forwarded-Proto $scheme;' \
+                  '        proxy_cache_bypass $http_upgrade;' \
+                  '        proxy_read_timeout 120s;' \
+                  '        proxy_send_timeout 120s;' \
+                  '    }' \
+                  '}' > "$NGINX_CONF"
+                nginx -t && systemctl reload nginx
+              fi
+
               echo "    Nginx configured for pdf.xending.com"
             else
               echo "    Nginx config already exists, skipping"
