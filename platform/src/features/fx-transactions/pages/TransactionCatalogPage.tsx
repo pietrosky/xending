@@ -35,7 +35,7 @@ export function TransactionCatalogPage() {
         ? await getPaymentAccountById(tx.pi_account_id)
         : null;
       const params = { transaction: tx, company, paymentAccount, piAccount } 
-      await generatePDFFromTemplate('xending-compact', params);
+      await generatePDFFromTemplate('xending-resume', params);
     } catch { /* non-critical */ }
   }
 

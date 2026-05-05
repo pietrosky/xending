@@ -22,11 +22,11 @@ cs_companies
   tax_regime text
   incorporation_date date
   address jsonb
-  syntage_entity_id text
-  scory_entity_id text
-  status text default 'active'
-  metadata jsonb
-  UNIQUE(tenant_id, rfc)
+  syntage_entity_id text // ???
+  scory_entity_id text // ???
+  status text default 'active' // hacer types como active - inactive - archive
+  metadata jsonb // metadata? de que? para que?
+  UNIQUE(tenant_id, rfc) // tax_regime no es unique tmb?
 
 cs_company_contacts
   id uuid pk
@@ -34,7 +34,7 @@ cs_company_contacts
   contact_type text
   contact_value text
   contact_name text
-  is_primary boolean
+  is_primary boolean // default false
 
 cs_data_extractions
   id uuid pk

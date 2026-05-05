@@ -28,7 +28,7 @@ export function PaymentOrderPDF({ transaction, company, paymentAccount, piAccoun
     setLoading(true);
     try {
       
-      await generatePDFFromTemplate('xending-compact', params);
+      await generatePDFFromTemplate('xending-resume', params);
     } finally {
       setLoading(false);
     }
