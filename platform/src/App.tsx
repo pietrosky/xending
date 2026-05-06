@@ -39,7 +39,7 @@ export function App() {
           {/* Admin-only routes */}
           <Route element={<AdminRoute />}>
             <Route path="companies" element={<CompaniesPage />} />
-            {/*<Route path="applications" element={<ApplicationsPage />} />
+            <Route path="applications" element={<ApplicationsPage />} />
             <Route path="applications/new" element={<NewApplicationPage />} />
             <Route path="applications/:id" element={<ApplicationDetailPage />} />
             <Route path="applications/:id/trends" element={<TrendsPage />} />
@@ -50,7 +50,7 @@ export function App() {
             <Route path="benchmarks" element={<BenchmarksPage />} />
             <Route path="methodology" element={<MethodologyPage />} />
             <Route path="mapa-datos" element={<DataMapPage />} />
-            <Route path="fichas-tecnicas" element={<FichasTecnicasPage />} />*/}
+            <Route path="fichas-tecnicas" element={<FichasTecnicasPage />} />
           </Route>
 
           {/* FX routes — both roles */}
