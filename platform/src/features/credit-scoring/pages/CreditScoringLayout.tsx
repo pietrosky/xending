@@ -21,13 +21,13 @@ import logoSrc from '@/assets/logoxending.png';
 const NAV_ITEMS: Array<{ to: string; label: string; icon: typeof LayoutDashboard; end: boolean; roles?: Array<'admin' | 'broker'> }> = [
   { to: '/', label: 'Scory Credit', icon: LayoutDashboard, end: true, roles: ['admin'] },
   { to: '/companies', label: 'Empresas', icon: Building2, end: false, roles: ['admin'] },
-  { to: '/portfolio', label: 'Portafolio', icon: TrendingUp, end: false, roles: ['admin'] },
-  { to: '/policies', label: 'Politicas', icon: Shield, end: false, roles: ['admin'] },
-  { to: '/benchmarks', label: 'Benchmarks', icon: BarChart3, end: false, roles: ['admin'] },
-  { to: '/methodology', label: 'Metodologia', icon: BookOpen, end: false, roles: ['admin'] },
-  { to: '/mapa-datos', label: 'Mapa de Datos', icon: Map, end: false, roles: ['admin'] },
-  { to: '/fichas-tecnicas', label: 'Fichas Tecnicas', icon: ClipboardList, end: false, roles: ['admin'] },
-  { to: '/applications', label: 'Solicitudes', icon: Settings, end: false, roles: ['admin'] },
+  //{ to: '/portfolio', label: 'Portafolio', icon: TrendingUp, end: false, roles: ['admin'] },
+  //{ to: '/policies', label: 'Politicas', icon: Shield, end: false, roles: ['admin'] },
+  //{ to: '/benchmarks', label: 'Benchmarks', icon: BarChart3, end: false, roles: ['admin'] },
+  //{ to: '/methodology', label: 'Metodologia', icon: BookOpen, end: false, roles: ['admin'] },
+  //{ to: '/mapa-datos', label: 'Mapa de Datos', icon: Map, end: false, roles: ['admin'] },
+  //{ to: '/fichas-tecnicas', label: 'Fichas Tecnicas', icon: ClipboardList, end: false, roles: ['admin'] },
+  //{ to: '/applications', label: 'Solicitudes', icon: Settings, end: false, roles: ['admin'] },
   { to: '/fx/companies', label: 'Empresas FX', icon: Landmark, end: false },
   { to: '/fx/transactions', label: 'Transacciones FX', icon: ArrowLeftRight, end: false },
   { to: '/payment-instructions', label: 'Payment Instructions', icon: CreditCard, end: false },
@@ -85,7 +85,7 @@ export function CreditScoringLayout() {
             </NavLink>
           ))}
 
-          {/* Tramitar Credito button — admin only */}
+          {/* Tramitar Credito button — admin only 
           {user?.role === 'admin' && (
             <NavLink
               to="/applications/new"
@@ -94,7 +94,7 @@ export function CreditScoringLayout() {
               <FilePlus size={18} />
               Tramitar Credito
             </NavLink>
-          )}
+          )}*/}
         </nav>
 
         {/* Footer — user info + logout */}
